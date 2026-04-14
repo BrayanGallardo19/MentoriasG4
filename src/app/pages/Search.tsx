@@ -1,83 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { Search as SearchIcon, Star, Users, Filter, ArrowLeft } from "lucide-react";
+import { Search as SearchIcon, Star, Users, Filter, ArrowLeft, AlertCircle } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
-
-// Mock data de mentores
-const mentors = [
-  {
-    id: 1,
-    name: "Ana García",
-    title: "Senior Frontend Developer",
-    rating: 4.9,
-    reviews: 127,
-    sessionsCompleted: 234,
-    skills: ["React", "TypeScript", "CSS", "JavaScript"],
-    hourlyRate: "Gratis",
-    availability: "Disponible hoy",
-    image: "https://images.unsplash.com/photo-1573495611823-5397efa4fac7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmZW1hbGUlMjBlbmdpbmVlciUyMHByb2dyYW1taW5nfGVufDF8fHx8MTc3MzkxNzc4Mnww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-  },
-  {
-    id: 2,
-    name: "Carlos Ruiz",
-    title: "Backend Engineer",
-    rating: 4.8,
-    reviews: 98,
-    sessionsCompleted: 176,
-    skills: ["Node.js", "Python", "SQL", "MongoDB"],
-    hourlyRate: "Gratis",
-    availability: "Disponible mañana",
-    image: "https://images.unsplash.com/photo-1581913229425-9c6b993fc107?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtYWxlJTIwZGV2ZWxvcGVyJTIwbGFwdG9wfGVufDF8fHx8MTc3MzkxNzc4Mnww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-  },
-  {
-    id: 3,
-    name: "María López",
-    title: "Full Stack Developer",
-    rating: 5.0,
-    reviews: 89,
-    sessionsCompleted: 145,
-    skills: ["React", "Node.js", "PostgreSQL", "AWS"],
-    hourlyRate: "Gratis",
-    availability: "Disponible hoy",
-    image: "https://images.unsplash.com/photo-1617042375876-a13e36732a04?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzb2Z0d2FyZSUyMGRldmVsb3BlciUyMGNvZGluZ3xlbnwxfHx8fDE3NzM4MzExMjZ8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-  },
-  {
-    id: 4,
-    name: "David Chen",
-    title: "Mobile Developer",
-    rating: 4.7,
-    reviews: 112,
-    sessionsCompleted: 198,
-    skills: ["React Native", "Flutter", "iOS", "Android"],
-    hourlyRate: "Gratis",
-    availability: "Disponible esta semana",
-    image: "https://images.unsplash.com/photo-1558949623-35b2e2649754?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhc2lhbiUyMHByb2dyYW1tZXIlMjB3b3JraW5nfGVufDF8fHx8MTc3MzkxNzc4Mnww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-  },
-  {
-    id: 5,
-    name: "Laura Martínez",
-    title: "Data Scientist",
-    rating: 4.9,
-    reviews: 76,
-    sessionsCompleted: 132,
-    skills: ["Python", "Machine Learning", "TensorFlow", "Pandas"],
-    hourlyRate: "Gratis",
-    availability: "Disponible hoy",
-    image: "https://images.unsplash.com/photo-1573495611823-5397efa4fac7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmZW1hbGUlMjBlbmdpbmVlciUyMHByb2dyYW1taW5nfGVufDF8fHx8MTc3MzkxNzc4Mnww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-  },
-  {
-    id: 6,
-    name: "Miguel Santos",
-    title: "DevOps Engineer",
-    rating: 4.8,
-    reviews: 95,
-    sessionsCompleted: 167,
-    skills: ["Docker", "Kubernetes", "AWS", "CI/CD"],
-    hourlyRate: "Gratis",
-    availability: "Disponible mañana",
-    image: "https://images.unsplash.com/photo-1581913229425-9c6b993fc107?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtYWxlJTIwZGV2ZWxvcGVyJTIwbGFwdG9wfGVufDF8fHx8MTc3MzkxNzc4Mnww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-  },
-];
+import { mockMentorshipOffers } from "../data/mockData";
+import { useAuth } from "../context/AuthContext";
 
 const allSkills = [
   "React",
@@ -99,6 +25,28 @@ const allSkills = [
 
 export default function Search() {
   const navigate = useNavigate();
+  const { user, isLoggedIn } = useAuth();
+
+  // Proteger acceso solo para estudiantes
+  if (!isLoggedIn || user?.role !== "estudiante") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Acceso Denegado</h1>
+          <p className="text-gray-600 mb-6">
+            Solo los estudiantes pueden acceder a esta página.
+          </p>
+          <button
+            onClick={() => navigate("/")}
+            className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+          >
+            Volver al Inicio
+          </button>
+        </div>
+      </div>
+    );
+  }
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
@@ -111,10 +59,10 @@ export default function Search() {
     );
   };
 
-  const filteredMentors = mentors.filter((mentor) => {
+  const filteredMentors = mockMentorshipOffers.filter((mentor) => {
     const matchesSearch =
       searchQuery === "" ||
-      mentor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      mentor.mentorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       mentor.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       mentor.skills.some((skill) =>
         skill.toLowerCase().includes(searchQuery.toLowerCase())
@@ -166,7 +114,7 @@ export default function Search() {
             Encuentra tu mentor ideal
           </h1>
           <p className="text-gray-600">
-            Explora {mentors.length} mentores disponibles para ayudarte
+            Explora {mockMentorshipOffers.length} mentores disponibles para ayudarte
           </p>
         </div>
 
@@ -252,19 +200,21 @@ export default function Search() {
               <div className="relative h-48 bg-gray-200">
                 <ImageWithFallback
                   src={mentor.image}
-                  alt={mentor.name}
+                  alt={mentor.mentorName}
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute top-3 right-3 bg-white px-2 py-1 rounded-full text-xs font-medium text-gray-700 shadow-sm">
-                  {mentor.availability}
-                </div>
+                {mentor.availableDates && mentor.availableDates.length > 0 && (
+                  <div className="absolute top-3 right-3 bg-white px-2 py-1 rounded-full text-xs font-medium text-gray-700 shadow-sm">
+                    📅 {mentor.availableDates.length} días disponibles
+                  </div>
+                )}
               </div>
 
               <div className="p-6">
                 <div className="flex items-start justify-between mb-2">
                   <div>
                     <h3 className="font-semibold text-lg text-gray-900 mb-1">
-                      {mentor.name}
+                      {mentor.mentorName}
                     </h3>
                     <p className="text-sm text-gray-600">{mentor.title}</p>
                   </div>
@@ -293,12 +243,24 @@ export default function Search() {
                   ))}
                 </div>
 
+                {/* Horarios */}
+                {mentor.timeStart && mentor.timeEnd && (
+                  <div className="mb-4 p-2 bg-blue-50 rounded-lg border border-blue-200">
+                    <p className="text-xs text-blue-700 font-medium">
+                      ⏰ Disponible de{" "}
+                      <strong>
+                        {mentor.timeStart} - {mentor.timeEnd}
+                      </strong>
+                    </p>
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                   <div className="text-sm text-gray-600">
                     {mentor.sessionsCompleted} sesiones
                   </div>
                   <div className="font-semibold text-indigo-600">
-                    {mentor.hourlyRate}
+                    {mentor.price}
                   </div>
                 </div>
               </div>

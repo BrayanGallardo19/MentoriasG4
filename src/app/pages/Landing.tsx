@@ -1,9 +1,11 @@
 import { useNavigate } from "react-router";
-import { Clock, Users, Star, ArrowRight, CheckCircle2 } from "lucide-react";
+import { Clock, Users, Star, ArrowRight, CheckCircle2, Shield, LogOut } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
+import { useAuth } from "../context/AuthContext";
 
 export default function Landing() {
   const navigate = useNavigate();
+  const { user, logout, isLoggedIn } = useAuth();
 
   return (
     <div className="min-h-screen bg-white">
@@ -16,12 +18,86 @@ export default function Landing() {
             </div>
             <span className="text-xl font-semibold text-gray-900">MicroMentorías</span>
           </div>
-          <button
-            onClick={() => navigate("/login")}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-          >
-            Iniciar sesión
-          </button>
+          <div className="flex items-center gap-2">
+            {isLoggedIn ? (
+              <>
+                {/* Menú según rol */}
+                {user?.role === "admin" && (
+                  <button
+                    onClick={() => navigate("/admin")}
+                    className="px-3 py-2 text-gray-700 hover:text-gray-900 transition-colors flex items-center gap-2 text-sm"
+                  >
+                    🔒 Panel Admin
+                  </button>
+                )}
+
+                {user?.role === "mentor" && (
+                  <>
+                    <button
+                      onClick={() => navigate("/mentor-dashboard")}
+                      className="px-3 py-2 text-gray-700 hover:text-gray-900 transition-colors flex items-center gap-2 text-sm"
+                    >
+                      👨‍🏫 Mi Dashboard
+                    </button>
+                    <button
+                      onClick={() => navigate("/mentor-schedule")}
+                      className="px-3 py-2 text-gray-700 hover:text-gray-900 transition-colors flex items-center gap-2 text-sm"
+                    >
+                      📅 Mi Calendario
+                    </button>
+                  </>
+                )}
+
+                {user?.role === "estudiante" && (
+                  <>
+                    <button
+                      onClick={() => navigate("/buscar")}
+                      className="px-3 py-2 text-gray-700 hover:text-gray-900 transition-colors flex items-center gap-2 text-sm"
+                    >
+                      🔍 Buscar Mentores
+                    </button>
+                    <button
+                      onClick={() => navigate("/student-schedule")}
+                      className="px-3 py-2 text-gray-700 hover:text-gray-900 transition-colors flex items-center gap-2 text-sm"
+                    >
+                      📅 Mis Sesiones
+                    </button>
+                  </>
+                )}
+
+                {/* Perfil y Logout */}
+                <div className="flex items-center gap-2 ml-4 pl-4 border-l border-gray-200">
+                  <div className="text-right">
+                    <div className="text-sm font-medium text-gray-900">{user?.name}</div>
+                    <div className="text-xs text-gray-500 capitalize">
+                      {user?.role === "estudiante"
+                        ? "🎓 Estudiante"
+                        : user?.role === "mentor"
+                        ? "👨‍🏫 Mentor"
+                        : "🔒 Admin"}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      logout();
+                      navigate("/");
+                    }}
+                    className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                    title="Cerrar sesión"
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </button>
+                </div>
+              </>
+            ) : (
+              <button
+                onClick={() => navigate("/login")}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+              >
+                Iniciar sesión
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
@@ -39,19 +115,53 @@ export default function Landing() {
               de forma rápida y efectiva.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <button
-                onClick={() => navigate("/buscar")}
-                className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
-              >
-                Buscar mentores
-                <ArrowRight className="w-5 h-5" />
-              </button>
-              <button
-                onClick={() => navigate("/login")}
-                className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:border-gray-400 transition-colors"
-              >
-                Ser mentor
-              </button>
+              {isLoggedIn ? (
+                <>
+                  {user?.role === "estudiante" && (
+                    <button
+                      onClick={() => navigate("/buscar")}
+                      className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
+                    >
+                      Buscar mentores
+                      <ArrowRight className="w-5 h-5" />
+                    </button>
+                  )}
+                  {user?.role === "mentor" && (
+                    <button
+                      onClick={() => navigate("/mentor-dashboard")}
+                      className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
+                    >
+                      Mi Dashboard
+                      <ArrowRight className="w-5 h-5" />
+                    </button>
+                  )}
+                  {user?.role === "admin" && (
+                    <button
+                      onClick={() => navigate("/admin")}
+                      className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
+                    >
+                      Panel de Control
+                      <ArrowRight className="w-5 h-5" />
+                    </button>
+                  )}
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => navigate("/buscar")}
+                    className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
+                  >
+                    Buscar mentores
+                    <ArrowRight className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => navigate("/login")}
+                    className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:border-gray-400 transition-colors"
+                  >
+                    Ser mentor
+                  </button>
+                </>
+              )}
             </div>
           </div>
           <div className="relative">
