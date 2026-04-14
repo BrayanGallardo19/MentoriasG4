@@ -292,280 +292,6 @@ export default function MentorDashboard() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Formulario */}
-        {showForm && (
-          <div className="bg-white rounded-lg border border-gray-200 p-8 mb-8">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">
-                {editingId ? "Editar Aviso de Mentoría" : "Crear Nuevo Aviso de Mentoría"}
-              </h2>
-              <button
-                onClick={handleCancel}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
-            {validationError && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-                {validationError}
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Título Profesional */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Título Profesional / Ocupación
-                </label>
-                <input
-                  type="text"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleInputChange}
-                  placeholder="Ej: Full Stack Developer, Senior Frontend Engineer..."
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                />
-              </div>
-
-              {/* Imagen */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  URL de la Imagen
-                </label>
-                <input
-                  type="text"
-                  name="image"
-                  value={formData.image}
-                  onChange={handleInputChange}
-                  placeholder="https://images.unsplash.com/..."
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent mb-2"
-                />
-                {formData.image && (
-                  <div className="text-sm text-gray-600 mb-2">
-                    Vista previa:
-                  </div>
-                )}
-                {formData.image && (
-                  <div className="relative h-40 bg-gray-100 rounded-lg overflow-hidden mb-4">
-                    <ImageWithFallback
-                      src={formData.image}
-                      alt="Preview"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Habilidades */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Habilidades
-                </label>
-                <textarea
-                  name="skills"
-                  value={formData.skills}
-                  onChange={handleInputChange}
-                  placeholder="Separa las habilidades con comas. Ej: React, TypeScript, Node.js, MongoDB, AWS"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent h-24"
-                />
-                <p className="text-xs text-gray-500 mt-2">
-                  Escribe cada habilidad separada por comas
-                </p>
-              </div>
-
-              {/* Grid 2 columnas */}
-              <div className="grid md:grid-cols-2 gap-6">
-                {/* Precio */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Precio de la Mentoría
-                  </label>
-                  <input
-                    type="text"
-                    name="price"
-                    value={formData.price}
-                    onChange={handleInputChange}
-                    placeholder="Ej: Gratis, $15/sesión"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  />
-                </div>
-
-              </div>
-
-              {/* Selector de Fechas Disponibles */}
-              <div className="border-t pt-6">
-                <label className="block text-sm font-medium text-gray-700 mb-4">
-                  📅 Selecciona los Días Disponibles para Mentoría
-                </label>
-                <p className="text-xs text-gray-500 mb-4">
-                  Elige qué días específicos estarás disponible para impartir mentorías
-                </p>
-
-                {/* Selector de Rango */}
-                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <h3 className="text-sm font-semibold text-blue-900 mb-3">
-                    Opción 1: Seleccionar Rango de Fechas
-                  </h3>
-                  <div className="grid md:grid-cols-2 gap-3 mb-3">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        Desde:
-                      </label>
-                      <input
-                        type="date"
-                        value={rangeStart}
-                        onChange={(e) => setRangeStart(e.target.value)}
-                        className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        Hasta:
-                      </label>
-                      <input
-                        type="date"
-                        value={rangeEnd}
-                        onChange={(e) => setRangeEnd(e.target.value)}
-                        className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => addDateRange(rangeStart, rangeEnd)}
-                    disabled={!rangeStart || !rangeEnd}
-                    className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 transition-colors text-sm font-medium"
-                  >
-                    ➕ Agregar Rango
-                  </button>
-                </div>
-
-                {/* O Selector Individual */}
-                <div className="mb-6 p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                  <h3 className="text-sm font-semibold text-purple-900 mb-3">
-                    Opción 2: Seleccionar Días Individuales
-                  </h3>
-                  <input
-                    type="date"
-                    id="dateSelector"
-                    className="w-full px-4 py-3 border border-purple-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    onChange={(e) => {
-                      if (e.target.value) {
-                        addDate(e.target.value);
-                        e.target.value = "";
-                      }
-                    }}
-                  />
-                </div>
-
-                {/* Fechas Seleccionadas */}
-                {formData.availableDates.length > 0 ? (
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-gray-700 mb-3">
-                      ✅ Fechas seleccionadas ({formData.availableDates.length}):
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {formData.availableDates.map((date) => (
-                        <div
-                          key={date}
-                          className="flex items-center gap-2 px-4 py-2 bg-green-100 border border-green-300 rounded-full hover:bg-green-150 transition-colors"
-                        >
-                          <span className="text-sm font-semibold text-green-700">
-                            📅 {formatDate(date)}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => removeDate(date)}
-                            className="text-green-600 hover:text-green-800 transition-colors"
-                            title="Eliminar fecha"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-center">
-                    <p className="text-sm text-yellow-700">
-                      ⚠️ Selecciona al menos un día disponible
-                    </p>
-                  </div>
-                )}
-              </div>
-              <div className="border-t pt-6">
-                <label className="block text-sm font-medium text-gray-700 mb-4">
-                  ⏰ Horarios Disponibles
-                </label>
-                <div className="grid md:grid-cols-2 gap-6">
-                  {/* Hora de Inicio */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Hora de Inicio
-                    </label>
-                    <input
-                      type="time"
-                      name="timeStart"
-                      value={formData.timeStart}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    />
-                    <p className="text-xs text-gray-500 mt-2">
-                      {formData.timeStart && `Desde las ${formData.timeStart}`}
-                    </p>
-                  </div>
-
-                  {/* Hora de Fin */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Hora de Fin
-                    </label>
-                    <input
-                      type="time"
-                      name="timeEnd"
-                      value={formData.timeEnd}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    />
-                    <p className="text-xs text-gray-500 mt-2">
-                      {formData.timeEnd && `Hasta las ${formData.timeEnd}`}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Resumen de horario */}
-                {formData.timeStart && formData.timeEnd && (
-                  <div className="mt-4 p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
-                    <p className="text-sm text-indigo-700">
-                      📅 Disponible de <strong>{formData.timeStart}</strong> a{" "}
-                      <strong>{formData.timeEnd}</strong> ({formData.availability})
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Botones */}
-              <div className="flex gap-4">
-                <button
-                  type="submit"
-                  className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
-                >
-                  {editingId ? "Guardar Cambios" : "Crear Aviso"}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCancel}
-                  className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-                >
-                  Cancelar
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
-
         {/* Stats */}
         <div className="grid md:grid-cols-3 gap-4 mb-8">
           <div className="bg-white rounded-lg border border-gray-200 p-6">
@@ -755,6 +481,291 @@ export default function MentorDashboard() {
               >
                 Eliminar
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Formulario de Edición/Creación */}
+      {showForm && (
+        <div
+          className="fixed inset-0 bg-black/10 flex items-center justify-center z-50 p-4 backdrop-blur-sm"
+          onClick={handleCancel}
+        >
+          <div
+            className="bg-white rounded-lg shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 sticky top-0 bg-white">
+              <h2 className="text-2xl font-bold text-gray-900">
+                {editingId ? "Editar Aviso de Mentoría" : "Crear Nuevo Aviso de Mentoría"}
+              </h2>
+              <button
+                onClick={handleCancel}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              {validationError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+                  {validationError}
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Título Profesional */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Título Profesional / Ocupación
+                  </label>
+                  <input
+                    type="text"
+                    name="title"
+                    value={formData.title}
+                    onChange={handleInputChange}
+                    placeholder="Ej: Full Stack Developer, Senior Frontend Engineer..."
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  />
+                </div>
+
+                {/* Imagen */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    URL de la Imagen
+                  </label>
+                  <input
+                    type="text"
+                    name="image"
+                    value={formData.image}
+                    onChange={handleInputChange}
+                    placeholder="https://images.unsplash.com/..."
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent mb-2"
+                  />
+                  {formData.image && (
+                    <div className="text-sm text-gray-600 mb-2">
+                      Vista previa:
+                    </div>
+                  )}
+                  {formData.image && (
+                    <div className="relative h-40 bg-gray-100 rounded-lg overflow-hidden mb-4">
+                      <ImageWithFallback
+                        src={formData.image}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Habilidades */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Habilidades
+                  </label>
+                  <textarea
+                    name="skills"
+                    value={formData.skills}
+                    onChange={handleInputChange}
+                    placeholder="Separa las habilidades con comas. Ej: React, TypeScript, Node.js, MongoDB, AWS"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent h-24"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    Escribe cada habilidad separada por comas
+                  </p>
+                </div>
+
+                {/* Grid 2 columnas */}
+                <div className="grid md:grid-cols-2 gap-6">
+                  {/* Precio */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Precio de la Mentoría
+                    </label>
+                    <input
+                      type="text"
+                      name="price"
+                      value={formData.price}
+                      onChange={handleInputChange}
+                      placeholder="Ej: Gratis, $15/sesión"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                {/* Selector de Fechas Disponibles */}
+                <div className="border-t pt-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-4">
+                    📅 Selecciona los Días Disponibles para Mentoría
+                  </label>
+                  <p className="text-xs text-gray-500 mb-4">
+                    Elige qué días específicos estarás disponible para impartir mentorías
+                  </p>
+
+                  {/* Selector de Rango */}
+                  <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <h3 className="text-sm font-semibold text-blue-900 mb-3">
+                      Opción 1: Seleccionar Rango de Fechas
+                    </h3>
+                    <div className="grid md:grid-cols-2 gap-3 mb-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Desde:
+                        </label>
+                        <input
+                          type="date"
+                          value={rangeStart}
+                          onChange={(e) => setRangeStart(e.target.value)}
+                          className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Hasta:
+                        </label>
+                        <input
+                          type="date"
+                          value={rangeEnd}
+                          onChange={(e) => setRangeEnd(e.target.value)}
+                          className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => addDateRange(rangeStart, rangeEnd)}
+                      disabled={!rangeStart || !rangeEnd}
+                      className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 transition-colors text-sm font-medium"
+                    >
+                      ➕ Agregar Rango
+                    </button>
+                  </div>
+
+                  {/* O Selector Individual */}
+                  <div className="mb-6 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                    <h3 className="text-sm font-semibold text-purple-900 mb-3">
+                      Opción 2: Seleccionar Días Individuales
+                    </h3>
+                    <input
+                      type="date"
+                      id="dateSelector"
+                      className="w-full px-4 py-3 border border-purple-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          addDate(e.target.value);
+                          e.target.value = "";
+                        }
+                      }}
+                    />
+                  </div>
+
+                  {/* Fechas Seleccionadas */}
+                  {formData.availableDates.length > 0 ? (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-gray-700 mb-3">
+                        ✅ Fechas seleccionadas ({formData.availableDates.length}):
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {formData.availableDates.map((date) => (
+                          <div
+                            key={date}
+                            className="flex items-center gap-2 px-4 py-2 bg-green-100 border border-green-300 rounded-full hover:bg-green-150 transition-colors"
+                          >
+                            <span className="text-sm font-semibold text-green-700">
+                              📅 {formatDate(date)}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => removeDate(date)}
+                              className="text-green-600 hover:text-green-800 transition-colors"
+                              title="Eliminar fecha"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-center">
+                      <p className="text-sm text-yellow-700">
+                        ⚠️ Selecciona al menos un día disponible
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Horarios */}
+                <div className="border-t pt-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-4">
+                    ⏰ Horarios Disponibles
+                  </label>
+                  <div className="grid md:grid-cols-2 gap-6">
+                    {/* Hora de Inicio */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Hora de Inicio
+                      </label>
+                      <input
+                        type="time"
+                        name="timeStart"
+                        value={formData.timeStart}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      />
+                      <p className="text-xs text-gray-500 mt-2">
+                        {formData.timeStart && `Desde las ${formData.timeStart}`}
+                      </p>
+                    </div>
+
+                    {/* Hora de Fin */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Hora de Fin
+                      </label>
+                      <input
+                        type="time"
+                        name="timeEnd"
+                        value={formData.timeEnd}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      />
+                      <p className="text-xs text-gray-500 mt-2">
+                        {formData.timeEnd && `Hasta las ${formData.timeEnd}`}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Resumen de horario */}
+                  {formData.timeStart && formData.timeEnd && (
+                    <div className="mt-4 p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
+                      <p className="text-sm text-indigo-700">
+                        📅 Disponible de <strong>{formData.timeStart}</strong> a{" "}
+                        <strong>{formData.timeEnd}</strong> ({formData.availability})
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Botones */}
+                <div className="flex gap-4 border-t pt-6">
+                  <button
+                    type="submit"
+                    className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+                  >
+                    {editingId ? "Guardar Cambios" : "Crear Aviso"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCancel}
+                    className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>

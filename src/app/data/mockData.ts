@@ -387,3 +387,144 @@ export const mockScheduledMentorships: ScheduledMentorship[] = [
     studentImage: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0MjAwNzV8MHwxfHJhbmRvbXx8fHx8fHx8fDE3MTcwMDAwMDB8&ixlib=rb-4.0&q=80&w=100",
   },
 ];
+
+// Interfaz para transacciones
+export interface Transaction {
+  id: number;
+  mentorId: number;
+  mentorName: string;
+  studentId: number;
+  studentName: string;
+  mentoriaId: number;
+  mentoriaTopic: string;
+  amount: number;
+  commission: number;
+  mentorEarnings: number;
+  date: string;
+  status: "completada" | "pendiente" | "reembolsada";
+  paymentMethod: "tarjeta" | "transferencia" | "billetera";
+}
+
+// Transacciones (ingresos por mentorías)
+export const mockTransactions: Transaction[] = [
+  {
+    id: 1,
+    mentorId: 1,
+    mentorName: "Ana García",
+    studentId: 4,
+    studentName: "Juan Pérez",
+    mentoriaId: 1,
+    mentoriaTopic: "React Avanzado",
+    amount: 150,
+    commission: 30,
+    mentorEarnings: 120,
+    date: "2026-04-10",
+    status: "completada",
+    paymentMethod: "tarjeta",
+  },
+  {
+    id: 2,
+    mentorId: 2,
+    mentorName: "Carlos Ruiz",
+    studentId: 5,
+    studentName: "Laura Martínez",
+    mentoriaId: 2,
+    mentoriaTopic: "Node.js y MongoDB",
+    amount: 180,
+    commission: 36,
+    mentorEarnings: 144,
+    date: "2026-04-09",
+    status: "completada",
+    paymentMethod: "transferencia",
+  },
+  {
+    id: 3,
+    mentorId: 3,
+    mentorName: "María López",
+    studentId: 7,
+    studentName: "Sofia Rossi",
+    mentoriaId: 3,
+    mentoriaTopic: "Full Stack Development",
+    amount: 200,
+    commission: 40,
+    mentorEarnings: 160,
+    date: "2026-04-08",
+    status: "completada",
+    paymentMethod: "tarjeta",
+  },
+  {
+    id: 4,
+    mentorId: 1,
+    mentorName: "Ana García",
+    studentId: 7,
+    studentName: "Sofia Rossi",
+    mentoriaId: 5,
+    mentoriaTopic: "TypeScript Avanzado",
+    amount: 120,
+    commission: 24,
+    mentorEarnings: 96,
+    date: "2026-04-07",
+    status: "pendiente",
+    paymentMethod: "billetera",
+  },
+  {
+    id: 5,
+    mentorId: 8,
+    mentorName: "Miguel Santos",
+    studentId: 4,
+    studentName: "Juan Pérez",
+    mentoriaId: 4,
+    mentoriaTopic: "DevOps y Docker",
+    amount: 170,
+    commission: 34,
+    mentorEarnings: 136,
+    date: "2026-04-06",
+    status: "completada",
+    paymentMethod: "transferencia",
+  },
+  {
+    id: 6,
+    mentorId: 1,
+    mentorName: "Ana García",
+    studentId: 5,
+    studentName: "Laura Martínez",
+    mentoriaId: 1,
+    mentoriaTopic: "React Avanzado",
+    amount: 150,
+    commission: 30,
+    mentorEarnings: 120,
+    date: "2026-04-05",
+    status: "completada",
+    paymentMethod: "tarjeta",
+  },
+  {
+    id: 7,
+    mentorId: 2,
+    mentorName: "Carlos Ruiz",
+    studentId: 4,
+    studentName: "Juan Pérez",
+    mentoriaId: 6,
+    mentoriaTopic: "Bases de Datos SQL",
+    amount: 140,
+    commission: 28,
+    mentorEarnings: 112,
+    date: "2026-04-04",
+    status: "reembolsada",
+    paymentMethod: "tarjeta",
+  },
+  {
+    id: 8,
+    mentorId: 3,
+    mentorName: "María López",
+    studentId: 4,
+    studentName: "Juan Pérez",
+    mentoriaId: 3,
+    mentoriaTopic: "Full Stack Development",
+    amount: 200,
+    commission: 40,
+    mentorEarnings: 160,
+    date: "2026-04-03",
+    status: "completada",
+    paymentMethod: "transferencia",
+  },
+];
