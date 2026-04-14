@@ -55,6 +55,7 @@ export default function Admin() {
     id: number;
   } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [viewingMentoría, setViewingMentoría] = useState<Mentoría | null>(null);
 
   // Funciones para usuarios
   const handleEditUser = (user: User) => {
@@ -383,6 +384,14 @@ export default function Admin() {
                       </td>
                       <td className="px-6 py-4 text-sm">
                         <div className="flex gap-2">
+                          <button
+                            onClick={() => setViewingMentoría(mentoría)}
+                            className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                            title="Ver detalles de mentoría"
+                            aria-label={`Ver detalles de la mentoría: ${mentoría.topic}`}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
                           {mentoría.status === "activa" && (
                             <button
                               onClick={() => handleDisableMentoría(mentoría.id)}
@@ -489,6 +498,110 @@ export default function Admin() {
               >
                 <Check className="w-4 h-4" />
                 Guardar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Detalle de Mentoría */}
+      {viewingMentoría && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg max-w-lg w-full mx-4">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-indigo-600" />
+                Detalles de Mentoría
+              </h2>
+              <button
+                onClick={() => setViewingMentoría(null)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
+                    ID
+                  </p>
+                  <p className="text-sm text-gray-900">#{viewingMentoría.id}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
+                    Estado
+                  </p>
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      viewingMentoría.status === "activa"
+                        ? "bg-green-50 text-green-700"
+                        : viewingMentoría.status === "completada"
+                        ? "bg-blue-50 text-blue-700"
+                        : "bg-gray-100 text-gray-700"
+                    }`}
+                  >
+                    {viewingMentoría.status === "activa"
+                      ? "🟢 Activa"
+                      : viewingMentoría.status === "completada"
+                      ? "✓ Completada"
+                      : "🔴 Deshabilitada"}
+                  </span>
+                </div>
+                <div className="col-span-2">
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
+                    Tema
+                  </p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {viewingMentoría.topic}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
+                    Mentor
+                  </p>
+                  <p className="text-sm text-gray-900">
+                    👨‍🏫 {viewingMentoría.mentorName}
+                  </p>
+                  <p className="text-xs text-gray-500">ID: {viewingMentoría.mentorId}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
+                    Estudiante
+                  </p>
+                  <p className="text-sm text-gray-900">
+                    🎓 {viewingMentoría.studentName}
+                  </p>
+                  <p className="text-xs text-gray-500">ID: {viewingMentoría.studentId}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
+                    Sesiones Completadas
+                  </p>
+                  <p className="text-sm text-gray-900">
+                    {viewingMentoría.sessionsCompleted}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
+                    Fecha de Inicio
+                  </p>
+                  <p className="text-sm text-gray-900">
+                    {new Date(viewingMentoría.createdAt).toLocaleDateString("es-ES", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end p-6 border-t border-gray-200">
+              <button
+                onClick={() => setViewingMentoría(null)}
+                className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+              >
+                Cerrar
               </button>
             </div>
           </div>
