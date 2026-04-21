@@ -17,7 +17,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -62,7 +61,7 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", "El correo electrónico ya está registrado."));
         }
 
-        // 2. Buscar el rol de "ESTUDIANTE" (ID = 3 según tu DataInitializer)
+        // 2. Buscar el rol de "ESTUDIANTE"
         Rol rolEstudiante = rolRepository.findById(3)
                 .orElseThrow(() -> new RuntimeException("Error: Rol de Estudiante no encontrado."));
 
