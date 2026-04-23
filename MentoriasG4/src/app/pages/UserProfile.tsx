@@ -12,7 +12,6 @@ export default function UserProfile() {
     return null;
   }
 
-  // 💡 NOTA: En una aplicación real, estas estadísticas vendrían del backend (Spring Boot).
   // Por ahora usamos datos simulados para ilustrar lo que el usuario vería.
   const mentorStats = {
     sessionsGiven: 42,
