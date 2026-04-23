@@ -284,36 +284,9 @@ export default function Login() {
               </div>
             </div>
 
-            {/* Test Users */}
-            <div className="space-y-2 mb-6">
-              <button
-                type="button"
-                onClick={() => loginTestUser("mentor@mentorias.com", "123456")}
-                className="w-full py-3 bg-blue-50 border-2 border-blue-200 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors font-medium"
-              >
-                👨‍🏫 Acceder como Mentor
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  loginTestUser("estudiante@mentorias.com", "123456")
-                }
-                className="w-full py-3 bg-green-50 border-2 border-green-200 text-green-700 rounded-lg hover:bg-green-100 transition-colors font-medium"
-              >
-                🎓 Acceder como Estudiante
-              </button>
-              <button
-                type="button"
-                onClick={() => loginTestUser("admin@mentorias.com", "123456")}
-                className="w-full py-3 bg-red-50 border-2 border-red-200 text-red-700 rounded-lg hover:bg-red-100 transition-colors font-medium"
-              >
-                🔒 Acceder como Admin
-              </button>
-            </div>
-
-            {/* Credentials Info */}
+            {/* Usuarios de prueba */}
+            {/* Información de credenciales */}
             <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded-lg mb-6">
-              <p className="font-semibold mb-2">Credenciales de prueba:</p>
               <p>
                 <strong>Mentor:</strong> mentor@mentorias.com / 123456
               </p>
