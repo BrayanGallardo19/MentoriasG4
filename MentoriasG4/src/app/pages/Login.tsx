@@ -1,0 +1,347 @@
+import { useState } from "react";
+import { useNavigate } from "react-router";
+import { Users, ArrowLeft } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
+
+export default function Login() {
+  const navigate = useNavigate();
+  const { login, register } = useAuth();
+  const [mode, setMode] = useState<"login" | "register">("login");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [error, setError] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSuccessMsg("");
+
+    if (mode === "register") {
+      if (!firstName || !lastName || !email || !password || !confirmPassword) {
+        setError("Por favor completa todos los campos");
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError("Las contraseñas no coinciden");
+        return;
+      }
+      if (!acceptTerms) {
+        setError("Debes aceptar los Términos y Condiciones");
+        return;
+      }
+      const fullName = `${firstName} ${lastName}`.trim();
+      const success = await register(fullName, email, password);
+      if (success) {
+        setMode("login");
+        setSuccessMsg("¡Cuenta creada exitosamente! Por favor, inicia sesión con tus credenciales.");
+        setPassword(""); // Limpiar contraseñas por seguridad
+        setConfirmPassword("");
+        setAcceptTerms(false);
+      } else {
+        setError("Error al registrarse. El correo podría ya estar en uso.");
+      }
+      return;
+    }
+
+    if (!email || !password) {
+      setError("Por favor completa todos los campos");
+      return;
+    }
+
+    const success = await login(email, password);
+    if (success) {
+      navigate("/");
+    } else {
+      setError("Email o contraseña incorrectos");
+    }
+  };
+
+  const loginTestUser = async (testEmail: string, testPassword: string) => {
+    const success = await login(testEmail, testPassword);
+    if (success) {
+      navigate("/");
+    } else {
+      setError("Error al conectar. Verifica que el servidor de Spring Boot esté corriendo.");
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Header */}
+      <header className="bg-white border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <button
+            onClick={() => navigate("/")}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            Volver
+          </button>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
+        <div className="max-w-md w-full">
+          {/* Logo */}
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <div className="w-12 h-12 bg-indigo-600 rounded-lg flex items-center justify-center">
+                <Users className="w-7 h-7 text-white" />
+              </div>
+              <span className="text-2xl font-semibold text-gray-900">
+                MicroMentorías
+              </span>
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              {mode === "login" ? "Bienvenido de nuevo" : "Crear cuenta"}
+            </h1>
+            <p className="text-gray-600">
+              {mode === "login"
+                ? "Ingresa tus datos para continuar"
+                : "Regístrate para comenzar"}
+            </p>
+          </div>
+
+          {/* Card */}
+          <div className="bg-white rounded-lg shadow-sm border p-8">
+            {/* Tabs */}
+            <div className="flex gap-2 mb-6">
+              <button
+                onClick={() => {
+                  setMode("login");
+                  setError("");
+              setSuccessMsg("");
+                }}
+                className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
+                  mode === "login"
+                    ? "bg-indigo-600 text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                Iniciar sesión
+              </button>
+              <button
+                onClick={() => {
+                  setMode("register");
+                  setError("");
+              setSuccessMsg("");
+                }}
+                className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
+                  mode === "register"
+                    ? "bg-indigo-600 text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                Registrarse
+              </button>
+            </div>
+
+            {/* Error Message */}
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+                {error}
+              </div>
+            )}
+        {/* Success Message */}
+        {successMsg && mode === "login" && (
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm">
+            {successMsg}
+          </div>
+        )}
+
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {mode === "register" && (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label
+                  htmlFor="firstName"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Nombre
+                </label>
+                <input
+                  id="firstName"
+                  type="text"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  placeholder="Tu nombre"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="lastName"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Apellido
+                </label>
+                <input
+                  id="lastName"
+                  type="text"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  placeholder="Tu apellido"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+              )}
+              <div>
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Email
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="tu@email.com"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Contraseña
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                />
+              </div>
+
+          {mode === "register" && (
+            <>
+              <div>
+                <label
+                  htmlFor="confirmPassword"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Confirmar Contraseña
+                </label>
+                <input
+                  id="confirmPassword"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                />
+              </div>
+              <div className="flex items-start mt-4">
+                <div className="flex items-center h-5">
+                  <input
+                    id="terms"
+                    type="checkbox"
+                    checked={acceptTerms}
+                    onChange={(e) => setAcceptTerms(e.target.checked)}
+                    className="w-4 h-4 border border-gray-300 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                  />
+                </div>
+                <div className="ml-2 text-sm">
+                  <label htmlFor="terms" className="font-medium text-gray-700 cursor-pointer">
+                    Acepto los <a href="#" className="text-indigo-600 hover:text-indigo-500">Términos y Condiciones</a> y la Política de Privacidad
+                  </label>
+                </div>
+              </div>
+            </>
+          )}
+
+              <button
+                type="submit"
+                className="w-full py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+              >
+                {mode === "login" ? "Iniciar sesión" : "Crear cuenta"}
+              </button>
+            </form>
+
+            {/* Divider */}
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">
+                  Cuentas de prueba
+                </span>
+              </div>
+            </div>
+
+            {/* Test Users */}
+            <div className="space-y-2 mb-6">
+              <button
+                type="button"
+                onClick={() => loginTestUser("mentor@mentorias.com", "123456")}
+                className="w-full py-3 bg-blue-50 border-2 border-blue-200 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors font-medium"
+              >
+                👨‍🏫 Acceder como Mentor
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  loginTestUser("estudiante@mentorias.com", "123456")
+                }
+                className="w-full py-3 bg-green-50 border-2 border-green-200 text-green-700 rounded-lg hover:bg-green-100 transition-colors font-medium"
+              >
+                🎓 Acceder como Estudiante
+              </button>
+              <button
+                type="button"
+                onClick={() => loginTestUser("admin@mentorias.com", "123456")}
+                className="w-full py-3 bg-red-50 border-2 border-red-200 text-red-700 rounded-lg hover:bg-red-100 transition-colors font-medium"
+              >
+                🔒 Acceder como Admin
+              </button>
+            </div>
+
+            {/* Credentials Info */}
+            <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded-lg mb-6">
+              <p className="font-semibold mb-2">Credenciales de prueba:</p>
+              <p>
+                <strong>Mentor:</strong> mentor@mentorias.com / 123456
+              </p>
+              <p>
+                <strong>Estudiante:</strong> estudiante@mentorias.com / 123456
+              </p>
+              <p>
+                <strong>Admin:</strong> admin@mentorias.com / 123456
+              </p>
+            </div>
+          </div>
+
+          {/* Footer text */}
+          <p className="text-center text-sm text-gray-600 mt-6">
+            {mode === "login" ? "¿No tienes cuenta? " : "¿Ya tienes cuenta? "}
+            <button
+          onClick={() => {
+            setMode(mode === "login" ? "register" : "login");
+            setError("");
+            setSuccessMsg("");
+          }}
+              className="text-indigo-600 hover:text-indigo-700 font-medium"
+            >
+              {mode === "login" ? "Regístrate aquí" : "Inicia sesión"}
+            </button>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}

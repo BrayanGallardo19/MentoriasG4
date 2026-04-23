@@ -1,0 +1,429 @@
+import { useState } from "react";
+import { useNavigate } from "react-router";
+import {
+  ArrowLeft,
+  Calendar,
+  Clock,
+  User,
+  CheckCircle2,
+  AlertCircle,
+  Video,
+  X,
+} from "lucide-react";
+import { mockScheduledMentorships, ScheduledMentorship } from "../data/mockData";
+import { ImageWithFallback } from "../components/figma/ImageWithFallback";
+import { useAuth } from "../context/AuthContext";
+
+export default function StudentSchedule() {
+  const navigate = useNavigate();
+  const { user, isLoggedIn } = useAuth();
+  const [activeTab, setActiveTab] = useState<"upcoming" | "completed">(
+    "upcoming"
+  );
+  const [showDetailModal, setShowDetailModal] = useState<number | null>(null);
+
+  // Proteger acceso solo para estudiantes
+  if (!isLoggedIn || user?.role !== "estudiante") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Acceso Denegado</h1>
+          <p className="text-gray-600 mb-6">
+            Solo los estudiantes pueden acceder a esta página.
+          </p>
+          <button
+            onClick={() => navigate("/")}
+            className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+          >
+            Volver al Inicio
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ID del estudiante actual (simulado)
+  const currentStudentId = user?.id || 4;
+
+  const studentSessions = mockScheduledMentorships.filter(
+    (s) => s.studentId === currentStudentId
+  );
+
+  const upcomingSessions = studentSessions.filter(
+    (s) => s.status === "pendiente" && new Date(s.date) >= new Date()
+  );
+
+  const completedSessions = studentSessions.filter((s) => s.status === "completada");
+
+  const sessionDetail = showDetailModal
+    ? studentSessions.find((s) => s.id === showDetailModal)
+    : null;
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white border-b sticky top-0 z-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => navigate("/")}
+                className="text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <div>
+                <h1 className="text-xl font-semibold text-gray-900">
+                  Mis Sesiones de Mentoría
+                </h1>
+                <p className="text-sm text-gray-600">
+                  Gestiona tus sesiones agendadas
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Tabs */}
+        <div className="flex gap-4 mb-8">
+          <button
+            onClick={() => setActiveTab("upcoming")}
+            className={`px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+              activeTab === "upcoming"
+                ? "bg-indigo-600 text-white"
+                : "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
+            }`}
+          >
+            <Calendar className="w-5 h-5" />
+            Próximas ({upcomingSessions.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("completed")}
+            className={`px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+              activeTab === "completed"
+                ? "bg-indigo-600 text-white"
+                : "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
+            }`}
+          >
+            <CheckCircle2 className="w-5 h-5" />
+            Completadas ({completedSessions.length})
+          </button>
+        </div>
+
+        {/* Próximas Sesiones */}
+        {activeTab === "upcoming" && (
+          <div>
+            {upcomingSessions.length > 0 ? (
+              <div className="space-y-4">
+                {upcomingSessions.map((session) => (
+                  <div
+                    key={session.id}
+                    className="bg-white border-2 border-indigo-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex gap-4 flex-1">
+                        {/* Foto del Mentor */}
+                        <div className="w-16 h-16 rounded-full bg-gray-200 flex-shrink-0 overflow-hidden">
+                          <ImageWithFallback
+                            src={session.studentImage || ""}
+                            alt={session.mentorName}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+
+                        {/* Información */}
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-lg text-gray-900 mb-1">
+                            {session.topic}
+                          </h3>
+                          <p className="text-gray-600 mb-3">
+                            con <strong>{session.mentorName}</strong>
+                          </p>
+
+                          <div className="flex gap-4 flex-wrap">
+                            <div className="flex items-center gap-1 text-gray-600">
+                              <Calendar className="w-4 h-4" />
+                              <span className="text-sm">
+                                {new Intl.DateTimeFormat("es-ES", {
+                                  weekday: "short",
+                                  day: "numeric",
+                                  month: "short",
+                                }).format(new Date(session.date))}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1 text-gray-600">
+                              <Clock className="w-4 h-4" />
+                              <span className="text-sm">
+                                {session.time} (GMT-5)
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1 text-gray-600">
+                              <AlertCircle className="w-4 h-4" />
+                              <span className="text-sm">
+                                {session.duration} minutos
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Precio */}
+                      <div className="text-right flex-shrink-0">
+                        <div className="text-2xl font-bold text-indigo-600 mb-2">
+                          ${session.price}
+                        </div>
+                        <span className="inline-block px-3 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                          Próxima
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Botones */}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setShowDetailModal(session.id)}
+                        className="flex-1 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors font-medium text-sm"
+                      >
+                        Ver Detalles
+                      </button>
+                      <button className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm flex items-center justify-center gap-2">
+                        <Video className="w-4 h-4" />
+                        Entrar Ahora
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+                <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  No tienes sesiones próximas
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  Agenda una sesión con un mentor para comenzar
+                </p>
+                <button
+                  onClick={() => navigate("/buscar")}
+                  className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+                >
+                  Buscar Mentores
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Sesiones Completadas */}
+        {activeTab === "completed" && (
+          <div>
+            {completedSessions.length > 0 ? (
+              <div className="bg-white rounded-lg border border-gray-200 overflow-x-auto">
+                <table className="w-full">
+                  <thead className="border-b border-gray-200 bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                        Mentor
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                        Tema
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                        Fecha
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                        Hora
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                        Duración
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                        Estado
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {completedSessions.map((session) => (
+                      <tr
+                        key={session.id}
+                        className="border-b border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer"
+                        onClick={() => setShowDetailModal(session.id)}
+                      >
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+                              <ImageWithFallback
+                                src={session.studentImage || ""}
+                                alt={session.mentorName}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            {session.mentorName}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          {session.topic}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          {new Intl.DateTimeFormat("es-ES", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          }).format(new Date(session.date))}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          {session.time}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          {session.duration} min
+                        </td>
+                        <td className="px-6 py-4 text-sm">
+                          <span className="px-3 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-full">
+                            ✓ Completada
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+                <CheckCircle2 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  No hay sesiones completadas
+                </h3>
+                <p className="text-gray-600">
+                  Las sesiones completadas aparecerán aquí
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Modal de Detalles */}
+      {showDetailModal && sessionDetail && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full mx-4">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Detalles de la Sesión
+              </h2>
+              <button
+                onClick={() => setShowDetailModal(null)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              {/* Mentor */}
+              <div className="flex items-center gap-4 mb-6 pb-6 border-b border-gray-200">
+                <div className="w-20 h-20 rounded-full bg-gray-200 overflow-hidden">
+                  <ImageWithFallback
+                    src={sessionDetail.studentImage || ""}
+                    alt={sessionDetail.mentorName}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {sessionDetail.mentorName}
+                  </h3>
+                  <p className="text-gray-600">Mentor</p>
+                </div>
+              </div>
+
+              {/* Información */}
+              <div className="grid md:grid-cols-2 gap-6 mb-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Tema
+                  </label>
+                  <p className="text-gray-900 font-semibold">
+                    {sessionDetail.topic}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Fecha
+                  </label>
+                  <p className="text-gray-900 font-semibold">
+                    {new Intl.DateTimeFormat("es-ES", {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    }).format(new Date(sessionDetail.date))}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Hora
+                  </label>
+                  <p className="text-gray-900 font-semibold">
+                    {sessionDetail.time} (GMT-5)
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Duración
+                  </label>
+                  <p className="text-gray-900 font-semibold">
+                    {sessionDetail.duration} minutos
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Precio
+                  </label>
+                  <p className="text-gray-900 font-semibold">
+                    ${sessionDetail.price.toFixed(2)}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Estado
+                  </label>
+                  <p className="text-gray-900 font-semibold capitalize">
+                    {sessionDetail.status === "pendiente"
+                      ? "Próxima"
+                      : "Completada"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Recordatorio */}
+              <div className="mb-6 p-4 bg-blue-50 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  💡 Asegúrate de tener tu cámara y micrófono listos 10 minutos
+                  antes de la sesión. Recibirás un enlace para entrar a la
+                  videollamada.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 p-6 border-t border-gray-200">
+              <button
+                onClick={() => setShowDetailModal(null)}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium"
+              >
+                Cerrar
+              </button>
+              {sessionDetail.status === "pendiente" && (
+                <button className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2">
+                  <Video className="w-4 h-4" />
+                  Entrar a Sesión
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
