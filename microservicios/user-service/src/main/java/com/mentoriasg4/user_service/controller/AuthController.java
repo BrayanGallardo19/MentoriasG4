@@ -51,7 +51,13 @@ public class AuthController {
         final Usuario usuario = usuarioRepository.findByEmail(loginDto.getEmail()).orElseThrow();
         final String token = jwtUtil.generateToken(usuario);
 
-        return ResponseEntity.ok(Map.of("token", token));
+        return ResponseEntity.ok(Map.of(
+                "token", token,
+                "id", usuario.getId_usuario(),
+                "name", usuario.getNombre(),
+                "email", usuario.getEmail(),
+                "role", usuario.getRol().getNombre().toLowerCase() // Pasamos a minúsculas ("estudiante", "mentor", "admin") para que coincida con React
+        ));
     }
 
     @PostMapping("/register")

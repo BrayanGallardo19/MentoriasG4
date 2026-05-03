@@ -25,7 +25,7 @@ export interface ScheduledMentorship {
   time: string;
   duration: number;
   price: number;
-  status: "pendiente" | "completada";
+  status: "pendiente" | "aprobada" | "completada" | "cancelada";
   platformLink?: string;
 }
 
@@ -58,8 +58,8 @@ export default function StudentSchedule() {
     );
   }
 
-  // ID del estudiante actual (simulado)
-  const currentStudentId = user?.id || 4;
+  // ID del estudiante actual
+  const currentStudentId = user?.id;
 
   const [studentSessions, setStudentSessions] = useState<ScheduledMentorship[]>([]);
 
@@ -79,11 +79,13 @@ export default function StudentSchedule() {
     fetchSessions();
   }, [currentStudentId]);
 
+  const todayStr = new Date().toISOString().split("T")[0];
+
   const upcomingSessions = studentSessions.filter(
-    (s) => s.status === "pendiente"
+    (s) => (s.status === "pendiente" || s.status === "aprobada" || s.status === "cancelada") && s.date >= todayStr
   );
 
-  const completedSessions = studentSessions.filter((s) => s.status === "completada");
+  const completedSessions = studentSessions.filter((s) => s.status === "completada" || (s.status === "cancelada" && s.date < todayStr));
 
   const sessionDetail = showDetailModal
     ? studentSessions.find((s) => s.id === showDetailModal)
@@ -204,8 +206,14 @@ export default function StudentSchedule() {
                         <div className="text-2xl font-bold text-indigo-600 mb-2">
                           ${session.price}
                         </div>
-                        <span className="inline-block px-3 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
-                          Próxima
+                        <span className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${
+                          session.status === "cancelada"
+                            ? "bg-red-100 text-red-700"
+                            : session.status === "aprobada"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-yellow-100 text-yellow-700"
+                        }`}>
+                          {session.status === "cancelada" ? "Cancelada" : session.status === "aprobada" ? "Aprobada" : "Por aprobar"}
                         </span>
                       </div>
                     </div>
@@ -218,10 +226,26 @@ export default function StudentSchedule() {
                       >
                         Ver Detalles
                       </button>
-                      <button className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm flex items-center justify-center gap-2">
-                        <Video className="w-4 h-4" />
-                        Entrar Ahora
-                      </button>
+                      {session.status === "cancelada" ? (
+                        <button disabled className="flex-1 px-4 py-2 bg-red-50 text-red-500 rounded-lg font-medium text-sm flex items-center justify-center gap-2 cursor-not-allowed">
+                          <X className="w-4 h-4" /> Cancelada
+                        </button>
+                      ) : session.status === "aprobada" && session.platformLink ? (
+                        <a
+                          href={session.platformLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm flex items-center justify-center gap-2"
+                        >
+                          <Video className="w-4 h-4" />
+                          Entrar Ahora
+                        </a>
+                      ) : (
+                        <button disabled className="flex-1 px-4 py-2 bg-gray-200 text-gray-500 rounded-lg font-medium text-sm flex items-center justify-center gap-2 cursor-not-allowed">
+                          <Clock className="w-4 h-4" />
+                          Esperando Link
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -310,8 +334,12 @@ export default function StudentSchedule() {
                           {session.duration} min
                         </td>
                         <td className="px-6 py-4 text-sm">
-                          <span className="px-3 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-full">
-                            ✓ Completada
+                          <span className={`px-3 py-1 text-xs font-medium rounded-full ${
+                            session.status === "completada" 
+                              ? "bg-blue-50 text-blue-700" 
+                              : "bg-red-50 text-red-700"
+                          }`}>
+                            {session.status === "completada" ? "✓ Completada" : "✕ Cancelada"}
                           </span>
                         </td>
                       </tr>
@@ -420,7 +448,11 @@ export default function StudentSchedule() {
                   </label>
                   <p className="text-gray-900 font-semibold capitalize">
                     {sessionDetail.status === "pendiente"
-                      ? "Próxima"
+                      ? "Por aprobar"
+                      : sessionDetail.status === "aprobada"
+                      ? "Aprobada"
+                      : sessionDetail.status === "cancelada"
+                      ? "Cancelada"
                       : "Completada"}
                   </p>
                 </div>
@@ -443,10 +475,21 @@ export default function StudentSchedule() {
               >
                 Cerrar
               </button>
-              {sessionDetail.status === "pendiente" && (
-                <button className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2">
+              {sessionDetail.status === "aprobada" && sessionDetail.platformLink && (
+                <a
+                  href={sessionDetail.platformLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2 text-center"
+                >
                   <Video className="w-4 h-4" />
                   Entrar a Sesión
+                </a>
+              )}
+              {sessionDetail.status === "pendiente" && (
+                <button disabled className="flex-1 px-4 py-2 bg-gray-200 text-gray-500 rounded-lg font-medium flex items-center justify-center gap-2 cursor-not-allowed">
+                  <Clock className="w-4 h-4" />
+                  Esperando Link
                 </button>
               )}
             </div>

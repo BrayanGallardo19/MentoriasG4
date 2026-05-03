@@ -55,12 +55,27 @@ export default function MentorProfile() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
+  const [bookedSlots, setBookedSlots] = useState<{date: string, time: string}[]>([]);
 
   useEffect(() => {
     if (id) {
       fetch(`http://localhost:8082/api/mentorship-offers/${id}`)
         .then(res => res.json())
-        .then(data => setMentor(data))
+        .then(data => {
+          setMentor(data);
+          // Consultamos las sesiones agendadas de este mentor para bloquear los horarios
+          if (data && data.mentorId) {
+            fetch(`http://localhost:8083/api/mentorship-sessions/mentor/${data.mentorId}`)
+              .then(res => res.json())
+              .then(sessions => {
+                const booked = sessions
+                  .filter((s: any) => s.status !== "cancelada")
+                  .map((s: any) => ({ date: s.date, time: s.time }));
+                setBookedSlots(booked);
+              })
+              .catch(err => console.error("Error fetching sessions:", err));
+          }
+        })
         .catch(err => console.error("Error fetching mentor profile:", err));
     }
   }, [id]);
@@ -74,7 +89,10 @@ export default function MentorProfile() {
   };
 
   const confirmBooking = () => {
-    if (!mentor || !selectedDate || !selectedSlot || !user) return;
+    if (!mentor || !selectedDate || !selectedSlot || !user || !user.id) {
+      alert("No se pudo identificar tu usuario. Por favor, vuelve a iniciar sesión.");
+      return;
+    }
 
     const bookingPayload = {
       mentorId: mentor.mentorId,
@@ -296,19 +314,24 @@ export default function MentorProfile() {
                     Horarios disponibles
                   </label>
                   <div className="grid grid-cols-3 gap-2">
-                    {['10:00', '11:00', '14:00', '15:00', '16:00'].map((slot) => (
-                        <button
-                          key={slot}
-                          onClick={() => setSelectedSlot(slot)}
-                          className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                            selectedSlot === slot
-                              ? "bg-indigo-600 text-white"
-                              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                          }`}
-                        >
-                          {slot}
-                        </button>
-                      ))}
+                    {['10:00', '11:00', '14:00', '15:00', '16:00'].map((slot) => {
+                      const isBooked = bookedSlots.some(b => b.date === selectedDate && b.time === slot);
+                      return (
+                      <button
+                        key={slot}
+                        onClick={() => !isBooked && setSelectedSlot(slot)}
+                        disabled={isBooked}
+                        className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                          isBooked
+                            ? "bg-gray-100 text-gray-400 cursor-not-allowed line-through opacity-60"
+                            : selectedSlot === slot
+                            ? "bg-indigo-600 text-white"
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        }`}
+                      >
+                        {slot}
+                      </button>
+                    )})}
                   </div>
                 </div>
               )}

@@ -27,7 +27,7 @@ export interface ScheduledMentorship {
   time: string;
   duration: number;
   price: number;
-  status: "pendiente" | "completada";
+  status: "pendiente" | "aprobada" | "completada" | "cancelada";
   platformLink?: string;
 }
 
@@ -83,21 +83,24 @@ export default function MentorSchedule() {
     }
   };
 
+  const todayStr = new Date().toISOString().split("T")[0];
+
   const upcomingMentorships = mentorships.filter(
-    // Filtramos solo por pendiente para mostrar todas las futuras
-    (m) => m.status === "pendiente"
+    (m) => (m.status === "pendiente" || m.status === "aprobada" || m.status === "cancelada") && m.date >= todayStr
   );
 
-  const completedMentorships = mentorships.filter((m) => m.status === "completada");
+  const completedMentorships = mentorships.filter((m) => m.status === "completada" || (m.status === "cancelada" && m.date < todayStr));
 
   const todayMentorships = mentorships.filter(
     (m) =>
-      m.status === "pendiente" &&
+      (m.status === "pendiente" || m.status === "aprobada" || m.status === "cancelada") &&
       m.date === selectedDate.toISOString().split("T")[0]
   );
 
   const totalEarnings = useMemo(() => {
-    return completedMentorships.reduce((sum, m) => sum + m.price, 0);
+    return completedMentorships
+      .filter((m) => m.status === "completada")
+      .reduce((sum, m) => sum + m.price, 0);
   }, [completedMentorships]);
 
   const handlePrevDay = () => {
@@ -131,7 +134,7 @@ export default function MentorSchedule() {
       const response = await fetch(`http://localhost:8083/api/mentorship-sessions/${mentorshipDetail.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: mentorshipDetail.status, platformLink: platformLinkInput }),
+        body: JSON.stringify({ status: "aprobada", platformLink: platformLinkInput }),
       });
       if (response.ok) {
         await fetchMentorSessions(); // Recargar datos
@@ -139,6 +142,43 @@ export default function MentorSchedule() {
       }
     } catch (error) {
       console.error("Error updating session link:", error);
+    }
+  };
+
+  const handleRejectSession = async () => {
+    if (!mentorshipDetail) return;
+    const confirm = window.confirm("¿Estás seguro de que deseas rechazar/cancelar esta sesión?");
+    if (!confirm) return;
+
+    try {
+      const response = await fetch(`http://localhost:8083/api/mentorship-sessions/${mentorshipDetail.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: "cancelada", platformLink: "" }),
+      });
+      if (response.ok) {
+        await fetchMentorSessions(); // Recargar datos
+        setShowDetailModal(null);
+      }
+    } catch (error) {
+      console.error("Error rejecting session:", error);
+    }
+  };
+
+  const handleCompleteSession = async () => {
+    if (!mentorshipDetail) return;
+    try {
+      const response = await fetch(`http://localhost:8083/api/mentorship-sessions/${mentorshipDetail.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: "completada", platformLink: mentorshipDetail.platformLink }),
+      });
+      if (response.ok) {
+        await fetchMentorSessions();
+        setShowDetailModal(null);
+      }
+    } catch (error) {
+      console.error("Error completing session:", error);
     }
   };
 
@@ -292,8 +332,14 @@ export default function MentorSchedule() {
                           <div className="text-2xl font-bold text-indigo-600 mb-2">
                             ${mentorship.price}
                           </div>
-                          <span className="inline-block px-3 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
-                            Pendiente
+                        <span className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${
+                          mentorship.status === "cancelada"
+                            ? "bg-red-100 text-red-700"
+                            : mentorship.status === "aprobada"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-yellow-100 text-yellow-700"
+                        }`}>
+                          {mentorship.status === "cancelada" ? "Cancelada" : mentorship.status === "aprobada" ? "Aprobada" : "Por aprobar"}
                           </span>
                         </div>
                       </div>
@@ -371,6 +417,17 @@ export default function MentorSchedule() {
                           <div className="text-right flex-shrink-0">
                             <div className="text-xl font-bold text-indigo-600">
                               ${mentorship.price}
+                            </div>
+                            <div className="mt-2">
+                              <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
+                                mentorship.status === "cancelada"
+                                  ? "bg-red-100 text-red-700"
+                                  : mentorship.status === "aprobada"
+                                  ? "bg-green-100 text-green-700"
+                                  : "bg-yellow-100 text-yellow-700"
+                              }`}>
+                                {mentorship.status === "cancelada" ? "Cancelada" : mentorship.status === "aprobada" ? "Aprobada" : "Por aprobar"}
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -453,6 +510,9 @@ export default function MentorSchedule() {
                       <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
                         Ganancia
                       </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                        Estado
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -489,8 +549,17 @@ export default function MentorSchedule() {
                         <td className="px-6 py-4 text-sm text-gray-600">
                           {mentorship.duration} min
                         </td>
-                        <td className="px-6 py-4 text-sm font-semibold text-green-600">
+                        <td className={`px-6 py-4 text-sm font-semibold ${mentorship.status === 'completada' ? 'text-green-600' : 'text-gray-400 line-through'}`}>
                           ${mentorship.price.toFixed(2)}
+                        </td>
+                        <td className="px-6 py-4 text-sm">
+                          <span className={`px-3 py-1 text-xs font-medium rounded-full ${
+                            mentorship.status === "completada" 
+                              ? "bg-blue-50 text-blue-700" 
+                              : "bg-red-50 text-red-700"
+                          }`}>
+                            {mentorship.status === "completada" ? "✓ Completada" : "✕ Cancelada"}
+                          </span>
                         </td>
                       </tr>
                     ))}
@@ -598,14 +667,18 @@ export default function MentorSchedule() {
                   </label>
                   <p className="text-gray-900 font-semibold capitalize">
                     {mentorshipDetail.status === "pendiente"
-                      ? "Pendiente"
+                      ? "Pendiente (Por aprobar)"
+                      : mentorshipDetail.status === "aprobada"
+                      ? "Aprobada"
+                      : mentorshipDetail.status === "cancelada"
+                      ? "Cancelada"
                       : "Completada"}
                   </p>
                 </div>
               </div>
 
               {/* Enlace de Plataforma */}
-              {mentorshipDetail.status === "pendiente" && (
+              {(mentorshipDetail.status === "pendiente" || mentorshipDetail.status === "aprobada") && (
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Link de Acceso a la Plataforma
@@ -636,7 +709,7 @@ export default function MentorSchedule() {
                 </div>
               )}
 
-              {mentorshipDetail.status === "completada" && mentorshipDetail.platformLink && (
+              {(mentorshipDetail.status === "completada" || mentorshipDetail.status === "cancelada") && mentorshipDetail.platformLink && (
                 <div className="mb-6 p-4 bg-gray-50 rounded-lg">
                   <p className="text-sm font-medium text-gray-700 mb-2">
                     Plataforma utilizada:
@@ -664,14 +737,35 @@ export default function MentorSchedule() {
                 Cerrar
               </button>
               {mentorshipDetail.status === "pendiente" && (
-                <button
-                  onClick={handleSaveLink}
-                  disabled={!platformLinkInput}
-                  className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium flex items-center justify-center gap-2"
-                >
-                  Guardar Link
-                </button>
+                <>
+                  <button
+                    onClick={handleRejectSession}
+                    className="flex-1 px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors font-medium flex items-center justify-center gap-2"
+                  >
+                    Rechazar
+                  </button>
+                  <button
+                    onClick={handleSaveLink}
+                    disabled={!platformLinkInput}
+                        className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium flex items-center justify-center gap-2"
+                  >
+                        Aprobar con Link
+                  </button>
+                </>
               )}
+                  {mentorshipDetail.status === "aprobada" && (
+                    <>
+                      <button onClick={handleRejectSession} className="px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors font-medium">
+                        Cancelar Sesión
+                      </button>
+                      <button onClick={handleSaveLink} disabled={!platformLinkInput} className="px-4 py-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-colors font-medium">
+                        Actualizar Link
+                      </button>
+                      <button onClick={handleCompleteSession} className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2">
+                        <CheckCircle2 className="w-4 h-4" /> Marcar Completada
+                      </button>
+                    </>
+                  )}
             </div>
           </div>
         </div>

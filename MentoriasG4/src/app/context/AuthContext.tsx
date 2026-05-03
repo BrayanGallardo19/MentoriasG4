@@ -44,18 +44,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [user, setUser] = useState<AuthUser | null>(() => {
     const token = localStorage.getItem("token");
-    if (token) {
+    const storedUser = localStorage.getItem("user");
+    
+    if (token && storedUser) {
       const decoded = parseJwt(token);
       // Validar si el token no ha expirado
       if (decoded && decoded.exp * 1000 > Date.now()) {
-        return {
-          id: 0, // El token actual no trae el ID, así que usamos 0 (se podría modificar el backend después)
-          name: decoded.nombre,
-          email: decoded.sub,
-          role: decoded.role.toLowerCase() as "admin" | "mentor" | "estudiante",
-        };
+        return JSON.parse(storedUser);
       } else {
         localStorage.removeItem("token");
+        localStorage.removeItem("user");
       }
     }
     return null;
@@ -73,13 +71,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         const data = await response.json();
         localStorage.setItem("token", data.token);
 
-        const decoded = parseJwt(data.token);
-        setUser({
-          id: 0,
-          name: decoded.nombre,
-          email: decoded.sub,
-          role: decoded.role.toLowerCase() as "admin" | "mentor" | "estudiante",
-        });
+        const loggedUser: AuthUser = {
+          id: data.id,
+          name: data.name,
+          email: data.email,
+          role: data.role as "admin" | "mentor" | "estudiante",
+        };
+
+        setUser(loggedUser);
+        localStorage.setItem("user", JSON.stringify(loggedUser));
         return true;
       }
     } catch (error) {
@@ -109,6 +109,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const logout = () => {
     setUser(null);
     localStorage.removeItem("token");
+    localStorage.removeItem("user");
   };
 
   return (
