@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router";
 import {
   ArrowLeft,
@@ -9,66 +9,64 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
+import { useAuth } from "../context/AuthContext";
 
-// Mock data del mentor
-const mentorData = {
-  id: 1,
-  name: "Ana García",
-  title: "Senior Frontend Developer",
-  rating: 4.9,
-  reviews: 127,
-  sessionsCompleted: 234,
-  skills: ["React", "TypeScript", "CSS", "JavaScript", "Next.js", "Tailwind CSS"],
-  bio: "Desarrolladora Frontend con más de 8 años de experiencia en la industria. Me especializo en React y TypeScript, y me apasiona ayudar a otros desarrolladores a resolver problemas complejos de forma simple y efectiva.",
-  image: "https://images.unsplash.com/photo-1573495611823-5397efa4fac7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmZW1hbGUlMjBlbmdpbmVlciUyMHByb2dyYW1taW5nfGVufDF8fHx8MTc3MzkxNzc4Mnww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-  availability: [
-    { day: "Lunes", slots: ["10:00", "14:00", "16:00"] },
-    { day: "Martes", slots: ["10:00", "15:00"] },
-    { day: "Miércoles", slots: ["11:00", "14:00", "17:00"] },
-    { day: "Jueves", slots: ["10:00", "16:00"] },
-    { day: "Viernes", slots: ["14:00", "15:00", "16:00"] },
-  ],
-  reviewsList: [
-    {
-      id: 1,
-      userName: "Carlos M.",
-      rating: 5,
-      date: "Hace 2 días",
-      comment: "Excelente sesión. Ana me ayudó a resolver un problema con React Hooks que llevaba días sin poder solucionar. Súper clara en sus explicaciones.",
-    },
-    {
-      id: 2,
-      userName: "Laura P.",
-      rating: 5,
-      date: "Hace 1 semana",
-      comment: "Muy profesional y paciente. Me explicó conceptos de TypeScript de forma muy didáctica. Definitivamente volveré a agendar con ella.",
-    },
-    {
-      id: 3,
-      userName: "Miguel R.",
-      rating: 4,
-      date: "Hace 2 semanas",
-      comment: "Buena sesión, aprendí mucho sobre optimización de componentes React. Recomendada.",
-    },
-    {
-      id: 4,
-      userName: "Sofia L.",
-      rating: 5,
-      date: "Hace 3 semanas",
-      comment: "Ana es increíble. Me ayudó con mi proyecto de universidad y ahora entiendo mucho mejor cómo funciona el estado en React.",
-    },
-  ],
-};
+export interface MentorshipOffer {
+  id: number;
+  mentorId: number;
+  mentorName: string;
+  title: string;
+  image: string;
+  price: string;
+  sessionsCompleted: number;
+  rating: number;
+  reviews: number;
+  timeStart: string;
+  timeEnd: string;
+  availability: string;
+  skills: string[];
+  availableDates: string[];
+}
+
+// Mock data for reviews until the service is implemented
+const dummyReviews = [
+  {
+    id: 1,
+    userName: "Carlos M.",
+    rating: 5,
+    date: "Hace 2 días",
+    comment: "Excelente sesión. Me ayudó a resolver un problema con React Hooks que llevaba días sin poder solucionar. Súper claro en sus explicaciones.",
+  },
+  {
+    id: 2,
+    userName: "Laura P.",
+    rating: 5,
+    date: "Hace 1 semana",
+    comment: "Muy profesional y paciente. Me explicó conceptos de TypeScript de forma muy didáctica. Definitivamente volveré a agendar con ella.",
+  },
+];
 
 export default function MentorProfile() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const { user } = useAuth();
+
+  const [mentor, setMentor] = useState<MentorshipOffer | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
 
+  useEffect(() => {
+    if (id) {
+      fetch(`http://localhost:8082/api/mentorship-offers/${id}`)
+        .then(res => res.json())
+        .then(data => setMentor(data))
+        .catch(err => console.error("Error fetching mentor profile:", err));
+    }
+  }, [id]);
+
   const handleBooking = () => {
-    if (!selectedDay || !selectedSlot) {
+    if (!selectedDate || !selectedSlot) {
       alert("Por favor selecciona un día y horario");
       return;
     }
@@ -76,10 +74,42 @@ export default function MentorProfile() {
   };
 
   const confirmBooking = () => {
-    alert(`¡Sesión agendada! ${selectedDay} a las ${selectedSlot}`);
-    setShowBookingModal(false);
-    navigate("/buscar");
+    if (!mentor || !selectedDate || !selectedSlot || !user) return;
+
+    const bookingPayload = {
+      mentorId: mentor.mentorId,
+      studentId: user.id,
+      mentorName: mentor.mentorName,
+      studentName: user.name,
+      studentImage: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=150&h=150",
+      topic: `Mentoría sobre ${mentor.skills[0] || 'desarrollo'}`,
+      date: selectedDate,
+      time: selectedSlot,
+      duration: 30,
+      price: parseFloat(mentor.price.replace('$', '').replace('/sesión', '')) || 0,
+      status: "pendiente",
+    };
+
+    fetch('http://localhost:8083/api/mentorship-sessions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(bookingPayload)
+    })
+    .then(res => {
+      if (res.ok) {
+        alert(`¡Sesión agendada! ${selectedDate} a las ${selectedSlot}`);
+        setShowBookingModal(false);
+        navigate("/student-schedule");
+      } else {
+        alert("Error al agendar la sesión.");
+      }
+    })
+    .catch(err => console.error("Error booking session:", err));
   };
+
+  if (!mentor) {
+    return <div className="min-h-screen flex items-center justify-center">Cargando perfil del mentor...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -106,35 +136,35 @@ export default function MentorProfile() {
                 <div className="flex gap-6">
                   <div className="relative w-32 h-32 rounded-full overflow-hidden flex-shrink-0 border-4 border-gray-100">
                     <ImageWithFallback
-                      src={mentorData.image}
-                      alt={mentorData.name}
+                      src={mentor.image}
+                      alt={mentor.mentorName}
                       className="w-full h-full object-cover"
                     />
                   </div>
                   <div className="flex-1">
                     <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                      {mentorData.name}
+                      {mentor.mentorName}
                     </h1>
-                    <p className="text-lg text-gray-600 mb-4">{mentorData.title}</p>
+                    <p className="text-lg text-gray-600 mb-4">{mentor.title}</p>
 
                     <div className="flex flex-wrap gap-4 mb-4">
                       <div className="flex items-center gap-1">
                         <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
                         <span className="font-semibold text-gray-900">
-                          {mentorData.rating}
+                          {mentor.rating}
                         </span>
                         <span className="text-gray-600">
-                          ({mentorData.reviews} reseñas)
+                          ({mentor.reviews} reseñas)
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-gray-600">
                         <CheckCircle2 className="w-5 h-5 text-green-600" />
-                        {mentorData.sessionsCompleted} sesiones completadas
+                        {mentor.sessionsCompleted} sesiones completadas
                       </div>
                     </div>
 
                     <div className="flex flex-wrap gap-2">
-                      {mentorData.skills.map((skill) => (
+                      {mentor.skills.map((skill) => (
                         <span
                           key={skill}
                           className="px-3 py-1 bg-indigo-50 text-indigo-700 text-sm rounded-full"
@@ -153,26 +183,27 @@ export default function MentorProfile() {
               <h2 className="text-xl font-semibold text-gray-900 mb-4">
                 Acerca de mí
               </h2>
-              <p className="text-gray-700 leading-relaxed">{mentorData.bio}</p>
+              <p className="text-gray-700 leading-relaxed">Desarrollador con más de 8 años de experiencia. Me especializo en las tecnologías listadas y me apasiona ayudar a otros a resolver problemas complejos.</p>
             </div>
 
             {/* Reviews */}
             <div className="bg-white rounded-lg border border-gray-200 p-8">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-gray-900">
-                  Reseñas ({mentorData.reviews})
+                  Reseñas ({mentor.reviews})
                 </h2>
                 <div className="flex items-center gap-2">
                   <Star className="w-6 h-6 fill-yellow-400 text-yellow-400" />
                   <span className="text-2xl font-bold text-gray-900">
-                    {mentorData.rating}
+                    {mentor.rating}
                   </span>
                 </div>
               </div>
 
               <div className="space-y-6">
-                {mentorData.reviewsList.map((review) => (
-                  <div key={review.id} className="border-b border-gray-100 last:border-0 pb-6 last:pb-0">
+                {/* Aquí iría un fetch a un futuro microservicio de reseñas */}
+                {dummyReviews.map((review) => (
+                  <div key={review.id} className="border-b border-gray-100 last:border-b-0 pb-6 last:pb-0">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
@@ -231,15 +262,15 @@ export default function MentorProfile() {
                   Selecciona un día
                 </label>
                 <div className="space-y-2">
-                  {mentorData.availability.map((avail) => (
+                  {mentor.availableDates.map((date) => (
                     <button
-                      key={avail.day}
+                      key={date}
                       onClick={() => {
-                        setSelectedDay(avail.day);
+                        setSelectedDate(date);
                         setSelectedSlot(null);
                       }}
                       className={`w-full flex items-center justify-between p-3 rounded-lg border-2 transition-all ${
-                        selectedDay === avail.day
+                        selectedDate === date
                           ? "border-indigo-600 bg-indigo-50"
                           : "border-gray-200 hover:border-gray-300"
                       }`}
@@ -247,11 +278,11 @@ export default function MentorProfile() {
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-gray-600" />
                         <span className="font-medium text-gray-900">
-                          {avail.day}
+                          {new Intl.DateTimeFormat("es-ES", { weekday: 'long', day: 'numeric', month: 'short' }).format(new Date(date + "T00:00"))}
                         </span>
                       </div>
                       <span className="text-sm text-gray-600">
-                        {avail.slots.length} slots
+                        Disponible
                       </span>
                     </button>
                   ))}
@@ -259,15 +290,13 @@ export default function MentorProfile() {
               </div>
 
               {/* Time Slots */}
-              {selectedDay && (
+              {selectedDate && (
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Horarios disponibles
                   </label>
                   <div className="grid grid-cols-3 gap-2">
-                    {mentorData.availability
-                      .find((a) => a.day === selectedDay)
-                      ?.slots.map((slot) => (
+                    {['10:00', '11:00', '14:00', '15:00', '16:00'].map((slot) => (
                         <button
                           key={slot}
                           onClick={() => setSelectedSlot(slot)}
@@ -287,9 +316,9 @@ export default function MentorProfile() {
               {/* Book Button */}
               <button
                 onClick={handleBooking}
-                disabled={!selectedDay || !selectedSlot}
+                disabled={!selectedDate || !selectedSlot}
                 className={`w-full py-3 rounded-lg font-medium transition-colors ${
-                  selectedDay && selectedSlot
+                  selectedDate && selectedSlot
                     ? "bg-indigo-600 text-white hover:bg-indigo-700"
                     : "bg-gray-200 text-gray-500 cursor-not-allowed"
                 }`}
@@ -319,7 +348,7 @@ export default function MentorProfile() {
                 ¡Confirmar reserva!
               </h3>
               <p className="text-gray-600 mb-6">
-                Estás a punto de agendar una sesión con {mentorData.name}
+                Estás a punto de agendar una sesión con {mentor.mentorName}
               </p>
 
               <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left">
@@ -327,12 +356,12 @@ export default function MentorProfile() {
                   <div className="flex justify-between">
                     <span className="text-gray-600">Mentor:</span>
                     <span className="font-medium text-gray-900">
-                      {mentorData.name}
+                      {mentor.mentorName}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Día:</span>
-                    <span className="font-medium text-gray-900">{selectedDay}</span>
+                    <span className="font-medium text-gray-900">{selectedDate}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Hora:</span>

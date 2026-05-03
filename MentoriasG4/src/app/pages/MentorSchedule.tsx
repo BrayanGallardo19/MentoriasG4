@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router";
 import {
   ArrowLeft,
@@ -63,12 +63,29 @@ export default function MentorSchedule() {
   const [platformLinkInput, setPlatformLinkInput] = useState("");
 
   // Simular mentor actual (en una app real, vendría del contexto de autenticación)
-  const currentMentorId = 1;
+  const currentMentorId = 2;
 
   const [mentorships, setMentorships] = useState<ScheduledMentorship[]>([]);
 
+  useEffect(() => {
+    fetchMentorSessions();
+  }, []);
+
+  const fetchMentorSessions = async () => {
+    try {
+      const response = await fetch(`http://localhost:8083/api/mentorship-sessions/mentor/${currentMentorId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setMentorships(data);
+      }
+    } catch (error) {
+      console.error("Error fetching mentor sessions:", error);
+    }
+  };
+
   const upcomingMentorships = mentorships.filter(
-    (m) => m.status === "pendiente" && new Date(m.date) >= selectedDate
+    // Filtramos solo por pendiente para mostrar todas las futuras
+    (m) => m.status === "pendiente"
   );
 
   const completedMentorships = mentorships.filter((m) => m.status === "completada");
@@ -106,6 +123,24 @@ export default function MentorSchedule() {
   const mentorshipDetail = showDetailModal
     ? mentorships.find((m) => m.id === showDetailModal)
     : null;
+
+  const handleSaveLink = async () => {
+    if (!mentorshipDetail || !platformLinkInput) return;
+
+    try {
+      const response = await fetch(`http://localhost:8083/api/mentorship-sessions/${mentorshipDetail.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: mentorshipDetail.status, platformLink: platformLinkInput }),
+      });
+      if (response.ok) {
+        await fetchMentorSessions(); // Recargar datos
+        setShowDetailModal(null);
+      }
+    } catch (error) {
+      console.error("Error updating session link:", error);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -630,15 +665,8 @@ export default function MentorSchedule() {
               </button>
               {mentorshipDetail.status === "pendiente" && (
                 <button
-                  onClick={() => {
-                    // Aquí iría la lógica para guardar el link de plataforma
-                    // Por ahora, solo actualizamos el estado
-                    if (platformLinkInput) {
-                      mentorshipDetail.platformLink = platformLinkInput;
-                      setPlatformLinkInput("");
-                      setShowDetailModal(null);
-                    }
-                  }}
+                  onClick={handleSaveLink}
+                  disabled={!platformLinkInput}
                   className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium flex items-center justify-center gap-2"
                 >
                   Guardar Link

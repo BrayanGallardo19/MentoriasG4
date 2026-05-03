@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import {
   ArrowLeft,
@@ -63,8 +63,24 @@ export default function StudentSchedule() {
 
   const [studentSessions, setStudentSessions] = useState<ScheduledMentorship[]>([]);
 
+  useEffect(() => {
+    const fetchSessions = async () => {
+      if (!currentStudentId) return;
+      try {
+        const response = await fetch(`http://localhost:8083/api/mentorship-sessions/student/${currentStudentId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setStudentSessions(data);
+        }
+      } catch (error) {
+        console.error("Error fetching student sessions:", error);
+      }
+    };
+    fetchSessions();
+  }, [currentStudentId]);
+
   const upcomingSessions = studentSessions.filter(
-    (s) => s.status === "pendiente" && new Date(s.date) >= new Date()
+    (s) => s.status === "pendiente"
   );
 
   const completedSessions = studentSessions.filter((s) => s.status === "completada");
