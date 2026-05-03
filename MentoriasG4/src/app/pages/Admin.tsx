@@ -14,8 +14,44 @@ import {
   Info,
   CreditCard,
 } from "lucide-react";
-import { mockUsers, mockMentorías, mockTransactions, User, Mentoría, Transaction } from "../data/mockData";
 import { useAuth } from "../context/AuthContext";
+
+export interface User {
+  id: number;
+  name: string;
+  email: string;
+  role: "estudiante" | "mentor" | "admin";
+  status: "activo" | "inactivo";
+  createdAt: string;
+}
+
+export interface Mentoría {
+  id: number;
+  topic: string;
+  mentorName: string;
+  mentorId: number;
+  studentName: string;
+  studentId: number;
+  status: "activa" | "completada" | "deshabilitada";
+  createdAt: string;
+  sessionsCompleted: number;
+}
+
+export interface Transaction {
+  id: number;
+  mentoriaId: number;
+  mentoriaTopic: string;
+  mentorId: number;
+  mentorName: string;
+  studentId: number;
+  studentName: string;
+  amount: number;
+  commission: number;
+  mentorEarnings: number;
+  date: string;
+  status: "completada" | "pendiente" | "reembolsada";
+  paymentMethod: "tarjeta" | "transferencia" | "billetera";
+}
 
 interface EditingUser {
   id: number;
@@ -47,9 +83,9 @@ export default function Admin() {
       </div>
     );
   }
-  const [users, setUsers] = useState<User[]>(mockUsers);
-  const [mentorías, setMentorías] = useState<Mentoría[]>(mockMentorías);
-  const [transactions, setTransactions] = useState<Transaction[]>(mockTransactions);
+  const [users, setUsers] = useState<User[]>([]);
+  const [mentorías, setMentorías] = useState<Mentoría[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [activeTab, setActiveTab] = useState<"users" | "mentorías" | "transacciones">("users");
   const [editingUser, setEditingUser] = useState<EditingUser | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);

@@ -10,9 +10,24 @@ import {
   Video,
   X,
 } from "lucide-react";
-import { mockScheduledMentorships, ScheduledMentorship } from "../data/mockData";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { useAuth } from "../context/AuthContext";
+
+export interface ScheduledMentorship {
+  id: number;
+  mentorId: number;
+  studentId: number;
+  mentorName: string;
+  studentName: string;
+  studentImage?: string;
+  topic: string;
+  date: string;
+  time: string;
+  duration: number;
+  price: number;
+  status: "pendiente" | "completada";
+  platformLink?: string;
+}
 
 export default function StudentSchedule() {
   const navigate = useNavigate();
@@ -46,9 +61,7 @@ export default function StudentSchedule() {
   // ID del estudiante actual (simulado)
   const currentStudentId = user?.id || 4;
 
-  const studentSessions = mockScheduledMentorships.filter(
-    (s) => s.studentId === currentStudentId
-  );
+  const [studentSessions, setStudentSessions] = useState<ScheduledMentorship[]>([]);
 
   const upcomingSessions = studentSessions.filter(
     (s) => s.status === "pendiente" && new Date(s.date) >= new Date()

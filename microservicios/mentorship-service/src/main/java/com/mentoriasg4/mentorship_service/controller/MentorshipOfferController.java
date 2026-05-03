@@ -10,7 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/mentorship-offers")
-@CrossOrigin(origins = "*") // Permite peticiones desde el frontend en desarrollo
+@CrossOrigin(origins = "*", maxAge = 3600) // Habilitamos CORS directamente para evitar bloqueos del navegador
 public class MentorshipOfferController {
 
     @Autowired

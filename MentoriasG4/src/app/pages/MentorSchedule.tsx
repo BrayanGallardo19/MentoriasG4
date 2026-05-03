@@ -12,9 +12,24 @@ import {
   Eye,
   X,
 } from "lucide-react";
-import { mockScheduledMentorships, ScheduledMentorship } from "../data/mockData";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { useAuth } from "../context/AuthContext";
+
+export interface ScheduledMentorship {
+  id: number;
+  mentorId: number;
+  studentId: number;
+  mentorName: string;
+  studentName: string;
+  studentImage?: string;
+  topic: string;
+  date: string;
+  time: string;
+  duration: number;
+  price: number;
+  status: "pendiente" | "completada";
+  platformLink?: string;
+}
 
 export default function MentorSchedule() {
   const navigate = useNavigate();
@@ -50,9 +65,7 @@ export default function MentorSchedule() {
   // Simular mentor actual (en una app real, vendría del contexto de autenticación)
   const currentMentorId = 1;
 
-  const mentorships = mockScheduledMentorships.filter(
-    (m) => m.mentorId === currentMentorId
-  );
+  const [mentorships, setMentorships] = useState<ScheduledMentorship[]>([]);
 
   const upcomingMentorships = mentorships.filter(
     (m) => m.status === "pendiente" && new Date(m.date) >= selectedDate

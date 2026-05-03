@@ -1,9 +1,25 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { ArrowLeft, Plus, X, Star, Trash2, Edit2, Calendar, AlertCircle } from "lucide-react";
-import { mockMentorshipOffers, MentorshipOffer } from "../data/mockData";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { useAuth } from "../context/AuthContext";
+
+export interface MentorshipOffer {
+  id: number;
+  mentorId: number;
+  mentorName: string;
+  title: string;
+  image: string;
+  price: string;
+  sessionsCompleted: number;
+  rating: number;
+  reviews: number;
+  timeStart: string;
+  timeEnd: string;
+  availability: string;
+  skills: string[];
+  availableDates: string[];
+}
 
 interface FormData {
   title: string;
@@ -13,6 +29,7 @@ interface FormData {
   timeStart: string;
   timeEnd: string;
   availableDates: string[];
+  availability: string;
 }
 
 export default function MentorDashboard() {
@@ -39,7 +56,7 @@ export default function MentorDashboard() {
       </div>
     );
   }
-  const [offers, setOffers] = useState<MentorshipOffer[]>(mockMentorshipOffers);
+  const [offers, setOffers] = useState<MentorshipOffer[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     title: "",
@@ -49,6 +66,7 @@ export default function MentorDashboard() {
     timeStart: "09:00",
     timeEnd: "18:00",
     availableDates: [],
+    availability: "Disponible",
   });
   const [editingId, setEditingId] = useState<number | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
@@ -56,8 +74,26 @@ export default function MentorDashboard() {
   const [rangeStart, setRangeStart] = useState("");
   const [rangeEnd, setRangeEnd] = useState("");
 
-  // Simular mentor actual (en una app real, vendrías del contexto de autenticación)
-  const currentMentorId = 1;
+  // Usamos el ID 2 para que coincida con los datos insertados en el DataInitializer del backend
+  const currentMentorId = 2;
+
+  useEffect(() => {
+    fetchOffers();
+  }, []);
+
+  const fetchOffers = async () => {
+    try {
+      const response = await fetch(`http://localhost:8082/api/mentorship-offers/mentor/${currentMentorId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setOffers(data);
+      } else {
+        console.error("Error al cargar ofertas:", await response.text());
+      }
+    } catch (error) {
+      console.error("Error fetching offers:", error);
+    }
+  };
   const mentorOffers = offers.filter((o) => o.mentorId === currentMentorId);
 
   const handleInputChange = (
@@ -83,77 +119,53 @@ export default function MentorDashboard() {
       setValidationError("Al menos una habilidad es requerida");
       return false;
     }
-    // Validar que sea una URL válida
-    try {
-      new URL(formData.image);
-    } catch {
-      setValidationError("La URL de la imagen no es válida");
-      return false;
-    }
     return true;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!validateForm()) {
       return;
     }
 
-    if (editingId) {
-      // Editar oferta existente
-      setOffers(
-        offers.map((o) =>
-          o.id === editingId
-            ? {
-                ...o,
-                title: formData.title,
-                image: formData.image,
-                skills: formData.skills
-                  .split(",")
-                  .map((s) => s.trim())
-                  .filter((s) => s),
-                price: formData.price,
-                timeStart: formData.timeStart,
-                timeEnd: formData.timeEnd,
-                availableDates: formData.availableDates,
-              }
-            : o
-        )
-      );
-      setEditingId(null);
-    } else {
-      // Crear nueva oferta
-      const newOffer: MentorshipOffer = {
-        id: Math.max(...offers.map((o) => o.id), 0) + 1,
-        mentorId: currentMentorId,
-        mentorName: "Ana García", // En una app real, vendría del usuario autenticado
-        title: formData.title,
-        image: formData.image,
-        skills: formData.skills
-          .split(",")
-          .map((s) => s.trim())
-          .filter((s) => s),
-        price: formData.price,
-        sessionsCompleted: 0,
-        rating: 5.0,
-        reviews: 0,
-        timeStart: formData.timeStart,
-        timeEnd: formData.timeEnd,
-        availableDates: formData.availableDates,
-      };
-      setOffers([...offers, newOffer]);
-    }
+    const payload = {
+      mentorId: currentMentorId,
+      mentorName: user?.name || "Mentor Experto", 
+      title: formData.title,
+      image: formData.image,
+      skills: formData.skills.split(",").map((s) => s.trim()).filter((s) => s),
+      price: formData.price,
+      timeStart: formData.timeStart,
+      timeEnd: formData.timeEnd,
+      availableDates: formData.availableDates,
+      availability: formData.availability,
+    };
 
-    // Resetear formulario
-    setFormData({
-      title: "",
-      image: "",
-      skills: "",
-      price: "Gratis",
-      availability: "Disponible hoy",
-    });
-    setShowForm(false);
+    try {
+      const url = editingId 
+        ? `http://localhost:8082/api/mentorship-offers/${editingId}`
+        : `http://localhost:8082/api/mentorship-offers`;
+      const method = editingId ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method: method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        await fetchOffers(); // Recargar datos frescos del servidor
+        handleCancel(); // Limpia y cierra el formulario
+      } else {
+        const errorText = await response.text();
+        console.error("Backend error:", errorText);
+        setValidationError(`Error del servidor: ${response.status} - Revisa la consola (F12)`);
+      }
+    } catch (error) {
+      console.error("Error saving offer:", error);
+      setValidationError("Error de conexión: Verifica que el backend (puerto 8082) esté encendido.");
+    }
   };
 
   const handleEdit = (offer: MentorshipOffer) => {
@@ -165,13 +177,23 @@ export default function MentorDashboard() {
       timeStart: offer.timeStart || "09:00",
       timeEnd: offer.timeEnd || "18:00",
       availableDates: offer.availableDates || [],
+      availability: offer.availability || "Disponible",
     });
     setEditingId(offer.id);
     setShowForm(true);
   };
 
-  const handleDelete = (id: number) => {
-    setOffers(offers.filter((o) => o.id !== id));
+  const handleDelete = async (id: number) => {
+    try {
+      const response = await fetch(`http://localhost:8082/api/mentorship-offers/${id}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        setOffers(offers.filter((o) => o.id !== id));
+      }
+    } catch (error) {
+      console.error("Error deleting offer:", error);
+    }
     setDeleteConfirm(null);
   };
 
@@ -186,6 +208,7 @@ export default function MentorDashboard() {
       timeStart: "09:00",
       timeEnd: "18:00",
       availableDates: [],
+      availability: "Disponible",
     });
     setRangeStart("");
     setRangeEnd("");

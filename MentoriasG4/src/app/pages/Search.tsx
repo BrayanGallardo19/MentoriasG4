@@ -1,9 +1,25 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Search as SearchIcon, Star, Users, Filter, ArrowLeft, AlertCircle } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
-import { mockMentorshipOffers } from "../data/mockData";
 import { useAuth } from "../context/AuthContext";
+
+export interface MentorshipOffer {
+  id: number;
+  mentorId: number;
+  mentorName: string;
+  title: string;
+  image: string;
+  price: string;
+  sessionsCompleted: number;
+  rating: number;
+  reviews: number;
+  timeStart: string;
+  timeEnd: string;
+  availability: string;
+  skills: string[];
+  availableDates: string[];
+}
 
 const allSkills = [
   "React",
@@ -50,6 +66,24 @@ export default function Search() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
+  const [offers, setOffers] = useState<MentorshipOffer[]>([]);
+
+  useEffect(() => {
+    const fetchOffers = async () => {
+      try {
+        const response = await fetch("http://localhost:8082/api/mentorship-offers");
+        if (response.ok) {
+          const data = await response.json();
+          setOffers(data);
+        } else {
+          console.error("Error fetching offers:", await response.text());
+        }
+      } catch (error) {
+        console.error("Error fetching offers:", error);
+      }
+    };
+    fetchOffers();
+  }, []);
 
   const toggleSkill = (skill: string) => {
     setSelectedSkills((prev) =>
@@ -59,18 +93,23 @@ export default function Search() {
     );
   };
 
-  const filteredMentors = mockMentorshipOffers.filter((mentor) => {
+  const filteredMentors = offers.filter((mentor) => {
+    // Protecciones en caso de que la DB envíe valores nulos
+    const name = mentor.mentorName || "";
+    const title = mentor.title || "";
+    const skills = mentor.skills || [];
+
     const matchesSearch =
       searchQuery === "" ||
-      mentor.mentorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      mentor.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      mentor.skills.some((skill) =>
+      name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      skills.some((skill) =>
         skill.toLowerCase().includes(searchQuery.toLowerCase())
       );
 
     const matchesSkills =
       selectedSkills.length === 0 ||
-      selectedSkills.some((skill) => mentor.skills.includes(skill));
+      selectedSkills.some((skill) => skills.includes(skill));
 
     return matchesSearch && matchesSkills;
   });
@@ -114,7 +153,7 @@ export default function Search() {
             Encuentra tu mentor ideal
           </h1>
           <p className="text-gray-600">
-            Explora {mockMentorshipOffers.length} mentores disponibles para ayudarte
+            Explora {offers.length} mentores disponibles para ayudarte
           </p>
         </div>
 
@@ -233,7 +272,7 @@ export default function Search() {
                 </div>
 
                 <div className="flex flex-wrap gap-1.5 mb-4">
-                  {mentor.skills.slice(0, 4).map((skill) => (
+                  {(mentor.skills || []).slice(0, 4).map((skill) => (
                     <span
                       key={skill}
                       className="px-2 py-1 bg-indigo-50 text-indigo-700 text-xs rounded-md"
