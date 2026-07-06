@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { Search as SearchIcon, Star, Users, Filter, ArrowLeft, AlertCircle } from "lucide-react";
+import { Search as SearchIcon, Star, Filter, ArrowLeft, AlertCircle, Award, Clock, LogOut } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { useAuth } from "../context/AuthContext";
+import { API } from "../config";
 
 export interface MentorshipOffer {
   id: number;
@@ -42,7 +43,7 @@ const allSkills = [
 
 export default function Search() {
   const navigate = useNavigate();
-  const { user, isLoggedIn } = useAuth();
+  const { user, isLoggedIn, logout } = useAuth();
 
   // Proteger acceso solo para estudiantes
   if (!isLoggedIn || user?.role !== "estudiante") {
@@ -72,7 +73,7 @@ export default function Search() {
   useEffect(() => {
     const fetchOffers = async () => {
       try {
-        const response = await fetch("http://localhost:8082/api/mentorship-offers");
+        const response = await fetch(`${API.MENTORSHIP_SERVICE}/api/mentorship-offers`);
         if (response.ok) {
           const data: MentorshipOffer[] = await response.json();
           
@@ -85,7 +86,7 @@ export default function Search() {
 
               try {
                 // Buscar reseñas específicas para esta oferta
-                const reviewsRes = await fetch(`http://localhost:8084/api/reviews/offer/${offer.id}`);
+                const reviewsRes = await fetch(`${API.FEEDBACK_SERVICE}/api/reviews/offer/${offer.id}`);
                 if (reviewsRes.ok) {
                   const reviews = await reviewsRes.json();
                   realReviewsCount = reviews.length;
@@ -96,7 +97,7 @@ export default function Search() {
                 }
 
                 // Buscar sesiones completadas del mentor
-                const sessionsRes = await fetch(`http://localhost:8083/api/mentorship-sessions/mentor/${offer.mentorId}`);
+                const sessionsRes = await fetch(`${API.SCHEDULING_SERVICE}/api/mentorship-sessions/mentor/${offer.mentorId}`);
                 if (sessionsRes.ok) {
                   const sessions = await sessionsRes.json();
                   realSessionsCount = sessions.filter((s: any) => s.status === 'completada').length;
@@ -152,41 +153,57 @@ export default function Search() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b sticky top-0 z-10">
+      <header className="border-b sticky top-0 bg-white/80 backdrop-blur-sm z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => navigate("/")}
-                className="text-gray-600 hover:text-gray-900 transition-colors"
+                className="p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
                 <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-                  <Users className="w-5 h-5 text-white" />
+                  <Award className="w-5 h-5 text-white" />
                 </div>
                 <span className="text-xl font-semibold text-gray-900">
-                  MicroMentorías
+                  CertiMentor
                 </span>
               </div>
             </div>
-            {isLoggedIn ? (
-              <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              {isLoggedIn ? (
+                <>
                 <button
                   onClick={() => navigate("/student-schedule")}
-                  className="text-gray-600 hover:text-gray-900 font-medium transition-colors"
+                  className="px-3 py-2 text-gray-700 hover:text-gray-900 transition-colors flex items-center gap-2 text-sm"
                 >
+                  <Clock className="w-4 h-4" />
                   Mis Sesiones
                 </button>
-                <button
-                  onClick={() => navigate("/perfil")}
-                  className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 transition-colors"
-                >
-                  <span className="font-medium">Mi Perfil</span>
-                </button>
-              </div>
-            ) : (
+
+                {/* Perfil y Logout */}
+                <div className="flex items-center gap-3 ml-4 pl-4 border-l border-gray-200">
+                  <button onClick={() => navigate("/perfil")} className="flex items-center gap-3 text-left hover:bg-gray-100 p-1 rounded-lg transition-colors">
+                    <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
+                      {user?.profileImage ? (
+                        <img src={user.profileImage} alt="Perfil" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-lg font-bold text-indigo-600">{user?.name?.charAt(0).toUpperCase() || "U"}</span>
+                      )}
+                    </div>
+                    <div className="hidden sm:block">
+                      <div className="text-sm font-medium text-gray-900">{user?.name}</div>
+                      <div className="text-xs text-gray-500 capitalize">{user?.role}</div>
+                    </div>
+                  </button>
+                  <button onClick={logout} className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Cerrar Sesión">
+                    <LogOut className="w-5 h-5" />
+                  </button>
+                </div>
+              </>
+              ) : (
               <button
                 onClick={() => navigate("/login")}
                 className="px-4 py-2 text-gray-700 hover:text-gray-900 transition-colors"
@@ -194,6 +211,7 @@ export default function Search() {
                 Mi cuenta
               </button>
             )}
+            </div>
           </div>
         </div>
       </header>

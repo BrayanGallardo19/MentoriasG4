@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { ArrowLeft, Plus, X, Star, Trash2, Edit2, Calendar, AlertCircle } from "lucide-react";
+import { Plus, X, Star, Trash2, Edit2, Calendar, AlertCircle, Award, LogOut } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { useAuth } from "../context/AuthContext";
+import { API } from "../config";
 
 export interface MentorshipOffer {
   id: number;
@@ -39,7 +40,7 @@ interface FormData {
 
 export default function MentorDashboard() {
   const navigate = useNavigate();
-  const { user, isLoggedIn } = useAuth();
+  const { user, isLoggedIn, logout } = useAuth();
 
   // Proteger acceso solo para mentores
   if (!isLoggedIn || user?.role !== "mentor") {
@@ -98,7 +99,7 @@ export default function MentorDashboard() {
 
   const fetchSessions = async () => {
     try {
-      const response = await fetch(`http://localhost:8083/api/mentorship-sessions/mentor/${currentMentorId}`);
+      const response = await fetch(`${API.SCHEDULING_SERVICE}/api/mentorship-sessions/mentor/${currentMentorId}`);
       if (response.ok) {
         const data = await response.json();
         setRealCompletedSessions(data.filter((s: any) => s.status === 'completada').length);
@@ -111,7 +112,7 @@ export default function MentorDashboard() {
   const fetchOffers = async () => {
     if (!currentMentorId) return;
     try {
-      const response = await fetch(`http://localhost:8082/api/mentorship-offers/mentor/${currentMentorId}`);
+      const response = await fetch(`${API.MENTORSHIP_SERVICE}/api/mentorship-offers/mentor/${currentMentorId}`);
       if (response.ok) {
         const data = await response.json();
         // Filtramos las ofertas eliminadas lógicamente
@@ -123,7 +124,7 @@ export default function MentorDashboard() {
             let realRating = offer.rating;
             let realReviewsCount = offer.reviews;
             try {
-              const reviewsRes = await fetch(`http://localhost:8084/api/reviews/offer/${offer.id}`);
+              const reviewsRes = await fetch(`${API.FEEDBACK_SERVICE}/api/reviews/offer/${offer.id}`);
               if (reviewsRes.ok) {
                 const reviews = await reviewsRes.json();
                 realReviewsCount = reviews.length;
@@ -218,9 +219,9 @@ export default function MentorDashboard() {
     };
 
     try {
-      const url = editingId 
-        ? `http://localhost:8082/api/mentorship-offers/${editingId}`
-        : `http://localhost:8082/api/mentorship-offers`;
+      const url = editingId
+        ? `${API.MENTORSHIP_SERVICE}/api/mentorship-offers/${editingId}`
+        : `${API.MENTORSHIP_SERVICE}/api/mentorship-offers`;
       const method = editingId ? "PUT" : "POST";
 
       const response = await fetch(url, {
@@ -263,7 +264,7 @@ export default function MentorDashboard() {
 
   const handleDelete = async (id: number) => {
     try {
-      const response = await fetch(`http://localhost:8082/api/mentorship-offers/${id}`, {
+      const response = await fetch(`${API.MENTORSHIP_SERVICE}/api/mentorship-offers/${id}`, {
         method: "DELETE",
       });
       if (response.ok) {
@@ -390,44 +391,64 @@ export default function MentorDashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => navigate("/")}
-                className="text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <div>
-                <h1 className="text-xl font-semibold text-gray-900">
-                  Mi Dashboard de Mentoría
-                </h1>
-                <p className="text-sm text-gray-600">
-                  Gestiona tus avisos de mentoría
-                </p>
-              </div>
+      <header className="border-b sticky top-0 bg-white/80 backdrop-blur-sm z-30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
+            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+              <Award className="w-5 h-5 text-white" />
             </div>
-            <button
-              onClick={() => setShowForm(!showForm)}
-              className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2 font-medium"
-            >
-              <Plus className="w-5 h-5" />
-              Nuevo Aviso
-            </button>
-            <button
-              onClick={() => navigate("/mentor-schedule")}
-              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 font-medium"
-            >
-              <Calendar className="w-5 h-5" />
-              Mi Calendario
-            </button>
+            <span className="text-xl font-semibold text-gray-900">CertiMentor</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {isLoggedIn && (
+              <>
+                <button
+                  onClick={() => navigate("/mentor-schedule")}
+                  className="px-3 py-2 text-gray-700 hover:text-gray-900 transition-colors flex items-center gap-2 text-sm"
+                >
+                  <Calendar className="w-4 h-4" />
+                  Mi Calendario
+                </button>
+
+                {/* Perfil */}
+                <div className="flex items-center gap-3 ml-4 pl-4 border-l border-gray-200">
+                  <button onClick={() => navigate("/perfil")} className="flex items-center gap-3 text-left hover:bg-gray-100 p-1 rounded-lg transition-colors">
+                    <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
+                      {user?.profileImage ? (
+                        <img src={user.profileImage} alt="Perfil" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-lg font-bold text-indigo-600">{user?.name?.charAt(0).toUpperCase() || "U"}</span>
+                      )}
+                    </div>
+                    <div className="hidden sm:block">
+                      <div className="text-sm font-medium text-gray-900">{user?.name}</div>
+                      <div className="text-xs text-gray-500 capitalize">{user?.role}</div>
+                    </div>
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Page Header */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Mi Dashboard de Mentoría</h1>
+            <p className="text-gray-600">Gestiona tus avisos, revisa estadísticas y crea nuevas ofertas.</p>
+          </div>
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="mt-4 sm:mt-0 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2 font-medium flex-shrink-0"
+          >
+            <Plus className="w-5 h-5" />
+            Nuevo Aviso
+          </button>
+        </div>
+
         {/* Stats */}
         <div className="grid md:grid-cols-3 gap-4 mb-8">
           <div className="bg-white rounded-lg border border-gray-200 p-6">

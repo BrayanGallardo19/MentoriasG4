@@ -13,7 +13,8 @@ public class MercadoPagoConfiguration {
 
     @PostConstruct
     public void init() {
-        // Inicializar SDK con el Token de prueba
+        System.out.println("=== Token length: " + (accessToken != null ? accessToken.length() : "NULL") + " ===");
+        System.out.println("=== Token completo: [" + accessToken + "] ===");
         MercadoPagoConfig.setAccessToken(accessToken);
     }
 }

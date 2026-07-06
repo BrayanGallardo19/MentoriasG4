@@ -1,10 +1,12 @@
-    import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { API } from "../config";
 
 export interface AuthUser {
   id: number;
   name: string;
   email: string;
   role: "admin" | "mentor" | "estudiante";
+  profileImage?: string;
 }
 
 interface AuthContextType {
@@ -17,7 +19,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_URL = "http://localhost:8081/api/auth";
+const API_URL = `${API.USER_SERVICE}/api/auth`;
 
 // Función utilitaria para extraer los datos del JWT sin librerías externas
 function parseJwt(token: string) {
@@ -76,6 +78,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           name: data.name,
           email: data.email,
           role: data.role as "admin" | "mentor" | "estudiante",
+          profileImage: data.profileImage,
         };
 
         setUser(loggedUser);

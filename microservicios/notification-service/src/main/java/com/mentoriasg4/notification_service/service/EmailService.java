@@ -1,101 +1,103 @@
 package com.mentoriasg4.notification_service.service;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Base64;
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class EmailService {
 
     private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
 
-    private final JavaMailSender mailSender;
-    private final String fromAddress;
+    @Value("${mailjet.api.key}")
+    private String apiKey;
 
-    public EmailService(JavaMailSender mailSender,
-                        @Value("${spring.mail.username}") String fromAddress) {
-        this.mailSender = mailSender;
-        this.fromAddress = fromAddress;
+    @Value("${mailjet.secret.key}")
+    private String secretKey;
+
+    @Value("${mailjet.sender.email:certimentor@gmail.com}")
+    private String senderEmail;
+
+    private final RestTemplate restTemplate = new RestTemplate();
+
+    private void sendEmail(String toEmail, String toName, String subject, String textContent) {
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            String auth = Base64.getEncoder().encodeToString((apiKey + ":" + secretKey).getBytes());
+            headers.set("Authorization", "Basic " + auth);
+
+            Map<String, Object> message = Map.of(
+                "From", Map.of("Email", senderEmail, "Name", "CertiMentor"),
+                "To", List.of(Map.of("Email", toEmail, "Name", toName != null ? toName : toEmail)),
+                "Subject", subject,
+                "TextPart", textContent
+            );
+
+            Map<String, Object> body = Map.of("Messages", List.of(message));
+
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+            restTemplate.postForEntity("https://api.mailjet.com/v3.1/send", entity, String.class);
+            logger.info("Correo enviado exitosamente a {}", toEmail);
+        } catch (Exception ex) {
+            logger.warn("No se pudo enviar correo a {}: {}", toEmail, ex.getMessage());
+        }
     }
 
     public void sendWelcomeEmail(String toEmail, String toName) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(fromAddress);
-        message.setTo(toEmail);
-        message.setSubject("Bienvenido/a a CertiMentor");
-        message.setText(
+        sendEmail(toEmail, toName,
+            "Bienvenido/a a CertiMentor",
             "Hola " + toName + ",\n\n" +
             "Bienvenido/a a CertiMentor. Nos alegra tenerte en la plataforma.\n" +
             "Si tienes preguntas, puedes responder a este correo.\n\n" +
-            "Saludos,\n" +
-            "Equipo CertiMentor"
+            "Saludos,\nEquipo CertiMentor"
         );
-
-        try {
-            mailSender.send(message);
-        } catch (Exception ex) {
-            logger.warn("No se pudo enviar correo de bienvenida a {}", toEmail, ex);
-        }
     }
 
     public void sendBookingStudentEmail(String toEmail, String toName, String mentorName, String date, String time) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(fromAddress);
-        message.setTo(toEmail);
-        message.setSubject("✅ Sesión Agendada Exitosamente - CertiMentor");
-        message.setText("Hola " + toName + ",\n\n" +
-            "Tu sesión de mentoría con " + mentorName + " ha sido agendada.\n" +
-            "El mentor revisará la solicitud y te confirmará pronto.\n\n" +
-            "📅 Fecha: " + date + "\n" +
-            "⏰ Hora: " + time + "\n\n" +
-            "Puedes revisar el estado de tu sesión en tu panel de estudiante.\n\n" +
-            "Saludos,\nEquipo CertiMentor");
-
-        try {
-            mailSender.send(message);
-        } catch (Exception ex) {
-            logger.warn("No se pudo enviar correo de reserva al estudiante {}", toEmail, ex);
-        }
+        sendEmail(toEmail, toName,
+            "Sesion Agendada Exitosamente - CertiMentor",
+            "Hola " + toName + ",\n\n" +
+            "Tu sesion de mentoria con " + mentorName + " ha sido agendada.\n" +
+            "El mentor revisara la solicitud y te confirmara pronto.\n\n" +
+            "Fecha: " + date + "\n" +
+            "Hora: " + time + "\n\n" +
+            "Puedes revisar el estado de tu sesion en tu panel de estudiante.\n\n" +
+            "Saludos,\nEquipo CertiMentor"
+        );
     }
 
     public void sendBookingMentorEmail(String toEmail, String mentorName, String studentName, String date, String time) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(fromAddress);
-        message.setTo(toEmail);
-        message.setSubject("🔔 Nueva Reserva de Mentoría - CertiMentor");
-        message.setText("Hola " + mentorName + ",\n\n" +
-            "¡Tienes una nueva solicitud de mentoría!\n" +
-            "El estudiante " + studentName + " ha agendado una sesión contigo.\n\n" +
-            "📅 Fecha: " + date + "\n" +
-            "⏰ Hora: " + time + "\n\n" +
-            "Por favor, ingresa a tu Dashboard para aprobar la sesión y proporcionar el link de la videollamada.\n\n" +
-            "Saludos,\nEquipo CertiMentor");
-
-        try {
-            mailSender.send(message);
-        } catch (Exception ex) {
-            logger.warn("No se pudo enviar correo de notificación al mentor {}", toEmail, ex);
-        }
+        sendEmail(toEmail, mentorName,
+            "Nueva Reserva de Mentoria - CertiMentor",
+            "Hola " + mentorName + ",\n\n" +
+            "Tienes una nueva solicitud de mentoria!\n" +
+            "El estudiante " + studentName + " ha agendado una sesion contigo.\n\n" +
+            "Fecha: " + date + "\n" +
+            "Hora: " + time + "\n\n" +
+            "Por favor, ingresa a tu Dashboard para aprobar la sesion.\n\n" +
+            "Saludos,\nEquipo CertiMentor"
+        );
     }
 
     public void sendCancellationEmail(String toEmail, String toName, String sessionDate, String reason) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(fromAddress);
-        message.setTo(toEmail);
-        message.setSubject("❌ Sesión Cancelada - CertiMentor");
-        message.setText("Hola " + toName + ",\n\n" +
-            "Te informamos que la sesión de mentoría programada para el " + sessionDate + " ha sido cancelada.\n\n" +
-            (reason != null && !reason.isBlank() ? "Razón indicada: " + reason + "\n\n" : "") +
-            "Si fue un error o necesitas reagendar, por favor coordina una nueva sesión desde la plataforma.\n\n" +
-            "Saludos,\nEquipo CertiMentor");
-
-        try {
-            mailSender.send(message);
-        } catch (Exception ex) {
-            logger.warn("No se pudo enviar correo de cancelación a {}", toEmail, ex);
-        }
+        sendEmail(toEmail, toName,
+            "Sesion Cancelada - CertiMentor",
+            "Hola " + toName + ",\n\n" +
+            "Te informamos que la sesion programada para el " + sessionDate + " ha sido cancelada.\n\n" +
+            (reason != null && !reason.isBlank() ? "Razon indicada: " + reason + "\n\n" : "") +
+            "Si necesitas reagendar, coordina una nueva sesion desde la plataforma.\n\n" +
+            "Saludos,\nEquipo CertiMentor"
+        );
     }
 }

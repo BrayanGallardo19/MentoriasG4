@@ -1,64 +1,86 @@
 package com.mentoriasg4.payment_service.controller;
 
-import com.mercadopago.client.preference.PreferenceBackUrlsRequest;
-import com.mercadopago.client.preference.PreferenceClient;
-import com.mercadopago.client.preference.PreferenceItemRequest;
-import com.mercadopago.client.preference.PreferenceRequest;
-import com.mercadopago.exceptions.MPApiException;
-import com.mercadopago.resources.preference.Preference;
+import com.mentoriasg4.payment_service.dto.CreatePreferenceRequest;
+import com.mentoriasg4.payment_service.model.Payment;
+import com.mentoriasg4.payment_service.service.PaymentService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 
-import java.math.BigDecimal;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/payments")
-@CrossOrigin(origins = "http://localhost:5173") // Permitir peticiones desde tu Frontend React
+@RequiredArgsConstructor
 public class PaymentController {
 
+    @Value("${app.frontend.url:http://localhost:5173}")
+    private String frontendUrl;
+
+    @Value("${mercadopago.access.token}")
+    private String accessToken;
+
+    private final PaymentService paymentService;
+    private final RestTemplate restTemplate;
+
     @PostMapping("/create-preference")
-    public ResponseEntity<?> createPreference(@RequestBody Map<String, Object> request) {
+    public ResponseEntity<?> createPreference(@RequestBody CreatePreferenceRequest request) {
         try {
-            String title = (String) request.get("title");
-            BigDecimal price = new BigDecimal(request.get("price").toString());
-            
-            // 1. Crear el ítem a cobrar
-            PreferenceItemRequest itemRequest = PreferenceItemRequest.builder()
-                    .title(title)
-                    .quantity(1)
-                    .unitPrice(price)
-                    .currencyId("CLP") // Pesos Chilenos
-                    .build();
+            // 1. Crear registro de pago en nuestra BD
+            Payment paymentRecord = paymentService.createPaymentRecord(request);
 
-            List<PreferenceItemRequest> items = new ArrayList<>();
-            items.add(itemRequest);
+            // 2. Construir el ítem para Mercado Pago
+            Map<String, Object> item = new HashMap<>();
+            item.put("title", request.getTitle());
+            item.put("quantity", 1);
+            item.put("unit_price", request.getPrice());
+            item.put("currency_id", "CLP");
 
-            // 2. Configurar a dónde volverá el usuario luego de pagar
-            PreferenceBackUrlsRequest backUrls = PreferenceBackUrlsRequest.builder()
-                    .success("http://localhost:5173/student-schedule?payment=success")
-                    .pending("http://localhost:5173/student-schedule?payment=pending")
-                    .failure("http://localhost:5173/oferta/" + request.get("offerId") + "?payment=failure")
-                    .build();
+            // 3. Configurar las URLs de retorno
+            Map<String, Object> backUrls = new HashMap<>();
+            String offerId = request.getOfferId() != null ? request.getOfferId().toString() : "";
+            backUrls.put("success", frontendUrl + "/student-schedule?payment=success");
+            backUrls.put("pending", frontendUrl + "/student-schedule?payment=pending");
+            backUrls.put("failure", frontendUrl + "/oferta/" + offerId + "?payment=failure");
 
-            // 3. Crear la Preferencia
-            PreferenceRequest preferenceRequest = PreferenceRequest.builder()
-                    .items(items)
-                    .backUrls(backUrls)
-                    .autoReturn("approved") // Redirigir automáticamente si el pago se aprueba
-                    .build();
+            // 4. Armar el body de la preferencia
+            Map<String, Object> body = new HashMap<>();
+            body.put("items", List.of(item));
+            body.put("back_urls", backUrls);
+            body.put("auto_return", "approved");
+            body.put("external_reference", paymentRecord.getId().toString()); // Vinculamos con nuestro ID interno
 
-            PreferenceClient client = new PreferenceClient();
-            Preference preference = client.create(preferenceRequest);
+            // 5. Llamada HTTP directa a la API de Mercado Pago
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setBearerAuth(accessToken);
 
-            // Retornamos el link de pago que nos da Mercado Pago
-            return ResponseEntity.ok(Map.of("init_point", preference.getInitPoint(), "id", preference.getId()));
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+            ResponseEntity<Map> response = restTemplate.postForEntity(
+                "https://api.mercadopago.com/checkout/preferences",
+                entity,
+                Map.class
+            );
 
-        } catch (MPApiException e) {
-            System.err.println("Error detallado MercadoPago: " + e.getApiResponse().getContent());
-            return ResponseEntity.status(e.getApiResponse().getStatusCode()).body(Map.of("error", "MP Error: " + e.getApiResponse().getContent()));
+            Map<String, Object> respBody = response.getBody();
+            if (respBody != null && respBody.get("id") != null) {
+                // 6. Actualizar nuestro registro con el ID de la preferencia de MP
+                paymentRecord.setMercadopagoPreferenceId((String) respBody.get("id"));
+                paymentService.savePayment(paymentRecord);
+            }
+
+            return ResponseEntity.ok(Map.of(
+                "init_point", respBody.get("init_point"),
+                "id", respBody.get("id")
+            ));
+
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));

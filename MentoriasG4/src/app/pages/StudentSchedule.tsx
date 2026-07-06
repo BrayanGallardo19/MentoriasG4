@@ -8,11 +8,15 @@ import {
   CheckCircle2,
   AlertCircle,
   Video,
+  LogOut,
+  Award,
+  Search,
   X,
   Star,
 } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { useAuth } from "../context/AuthContext";
+import { API } from "../config";
 
 export interface ScheduledMentorship {
   id: number;
@@ -36,7 +40,7 @@ export interface ScheduledMentorship {
 
 export default function StudentSchedule() {
   const navigate = useNavigate();
-  const { user, isLoggedIn } = useAuth();
+  const { user, isLoggedIn, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<"upcoming" | "completed" | "canceled">("upcoming");
   const [showDetailModal, setShowDetailModal] = useState<number | null>(null);
   const [isCanceling, setIsCanceling] = useState(false);
@@ -75,7 +79,7 @@ export default function StudentSchedule() {
   const fetchSessions = async () => {
     if (!currentStudentId) return;
     try {
-      const response = await fetch(`http://localhost:8083/api/mentorship-sessions/student/${currentStudentId}`);
+      const response = await fetch(`${API.SCHEDULING_SERVICE}/api/mentorship-sessions/student/${currentStudentId}`);
       if (response.ok) {
         const data = await response.json();
         setStudentSessions(data);
@@ -99,7 +103,7 @@ export default function StudentSchedule() {
         const bookingPayload = JSON.parse(pendingBookingStr);
         localStorage.removeItem("pendingBooking"); // Limpiar para no duplicar
 
-        fetch('http://localhost:8083/api/mentorship-sessions', {
+        fetch(`${API.SCHEDULING_SERVICE}/api/mentorship-sessions`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(bookingPayload)
@@ -149,7 +153,7 @@ export default function StudentSchedule() {
     
     if (session && currentStudentId) {
       try {
-        const res = await fetch(`http://localhost:8084/api/reviews/exists?offerId=${session.offerId}&studentId=${currentStudentId}`);
+        const res = await fetch(`${API.FEEDBACK_SERVICE}/api/reviews/exists?offerId=${session.offerId}&studentId=${currentStudentId}`);
         if (res.ok) {
           const exists = await res.json();
           setReviewSubmitted(exists);
@@ -161,7 +165,7 @@ export default function StudentSchedule() {
   const handleCompleteSession = async () => {
     if (!sessionDetail) return;
     try {
-      const response = await fetch(`http://localhost:8083/api/mentorship-sessions/${sessionDetail.id}`, {
+      const response = await fetch(`${API.SCHEDULING_SERVICE}/api/mentorship-sessions/${sessionDetail.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: "completada", platformLink: sessionDetail.platformLink }),
@@ -179,7 +183,7 @@ export default function StudentSchedule() {
     const reason = prompt("Por favor, describe brevemente por qué estás abriendo una disputa (ej: el mentor no se presentó).");
     if (!reason) return;
     try {
-      const response = await fetch(`http://localhost:8083/api/mentorship-sessions/${sessionDetail.id}`, {
+      const response = await fetch(`${API.SCHEDULING_SERVICE}/api/mentorship-sessions/${sessionDetail.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: "disputada", topic: sessionDetail.topic + ` [DISPUTA: ${reason}]` }),
@@ -196,7 +200,7 @@ export default function StudentSchedule() {
   const confirmCancelSession = async () => {
     if (!sessionDetail) return;
     try {
-      const response = await fetch(`http://localhost:8083/api/mentorship-sessions/${sessionDetail.id}`, {
+      const response = await fetch(`${API.SCHEDULING_SERVICE}/api/mentorship-sessions/${sessionDetail.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: "cancelada", cancelReason: cancelReason.trim() }),
@@ -214,7 +218,7 @@ export default function StudentSchedule() {
     if (!sessionDetail || !currentStudentId) return;
     try {
       const reviewPayload = { mentorId: sessionDetail.mentorId, offerId: sessionDetail.offerId, studentId: currentStudentId, rating, comment };
-      const response = await fetch("http://localhost:8084/api/reviews", {
+      const response = await fetch(`${API.FEEDBACK_SERVICE}/api/reviews`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(reviewPayload)
@@ -228,30 +232,53 @@ export default function StudentSchedule() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => navigate("/")}
-                className="text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <div>
-                <h1 className="text-xl font-semibold text-gray-900">
-                  Mis Sesiones de Mentoría
-                </h1>
-                <p className="text-sm text-gray-600">
-                  Gestiona tus sesiones agendadas
-                </p>
-              </div>
+      <header className="border-b sticky top-0 bg-white/80 backdrop-blur-sm z-30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
+            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+              <Award className="w-5 h-5 text-white" />
             </div>
+            <span className="text-xl font-semibold text-gray-900">CertiMentor</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {isLoggedIn && (
+              <>
+                <button
+                  onClick={() => navigate("/buscar")}
+                  className="px-3 py-2 text-gray-700 hover:text-gray-900 transition-colors flex items-center gap-2 text-sm"
+                >
+                  <Search className="w-4 h-4" />
+                  Buscar Mentores
+                </button>
+
+                {/* Perfil */}
+                <div className="flex items-center gap-3 ml-4 pl-4 border-l border-gray-200">
+                  <button onClick={() => navigate("/perfil")} className="flex items-center gap-3 text-left hover:bg-gray-100 p-1 rounded-lg transition-colors">
+                    <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
+                      {user?.profileImage ? (
+                        <img src={user.profileImage} alt="Perfil" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-lg font-bold text-indigo-600">{user?.name?.charAt(0).toUpperCase() || "U"}</span>
+                      )}
+                    </div>
+                    <div className="hidden sm:block">
+                      <div className="text-sm font-medium text-gray-900">{user?.name}</div>
+                      <div className="text-xs text-gray-500 capitalize">{user?.role}</div>
+                    </div>
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Mis Sesiones de Mentoría</h1>
+          <p className="text-gray-600">Gestiona tus sesiones agendadas, completadas y canceladas.</p>
+        </div>
         {/* Tabs */}
         <div className="flex gap-4 mb-8">
           <button
@@ -572,6 +599,17 @@ export default function StudentSchedule() {
             )}
           </div>
         )}
+
+        {/* Botón de Cerrar Sesión */}
+        <div className="mt-8 pt-6 border-t border-gray-200">
+          <button
+            onClick={logout}
+            className="w-full px-6 py-3 bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+          >
+            <LogOut className="w-5 h-5" />
+            Cerrar Sesión
+          </button>
+        </div>
       </div>
 
       {/* Modal de Detalles */}

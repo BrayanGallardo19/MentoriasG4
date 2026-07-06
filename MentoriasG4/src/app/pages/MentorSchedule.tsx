@@ -7,6 +7,9 @@ import {
   DollarSign,
   CheckCircle2,
   AlertCircle,
+  LogOut,
+  Award,
+  Users,
   ChevronLeft,
   ChevronRight,
   Eye,
@@ -14,6 +17,7 @@ import {
 } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { useAuth } from "../context/AuthContext";
+import { API } from "../config";
 
 export interface ScheduledMentorship {
   id: number;
@@ -36,7 +40,7 @@ export interface ScheduledMentorship {
 
 export default function MentorSchedule() {
   const navigate = useNavigate();
-  const { user, isLoggedIn } = useAuth();
+  const { user, isLoggedIn, logout } = useAuth();
 
   // Proteger acceso solo para mentores
   if (!isLoggedIn || user?.role !== "mentor") {
@@ -75,7 +79,7 @@ export default function MentorSchedule() {
   const fetchMentorSessions = async () => {
     if (!currentMentorId) return;
     try {
-      const response = await fetch(`http://localhost:8083/api/mentorship-sessions/mentor/${currentMentorId}`);
+      const response = await fetch(`${API.SCHEDULING_SERVICE}/api/mentorship-sessions/mentor/${currentMentorId}`);
       if (response.ok) {
         const data = await response.json();
         setMentorships(data);
@@ -120,7 +124,7 @@ export default function MentorSchedule() {
     if (!mentorshipDetail || !platformLinkInput) return;
 
     try {
-      const response = await fetch(`http://localhost:8083/api/mentorship-sessions/${mentorshipDetail.id}`, {
+      const response = await fetch(`${API.SCHEDULING_SERVICE}/api/mentorship-sessions/${mentorshipDetail.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: "aprobada", platformLink: platformLinkInput }),
@@ -138,7 +142,7 @@ export default function MentorSchedule() {
     if (!mentorshipDetail) return;
 
     try {
-      const response = await fetch(`http://localhost:8083/api/mentorship-sessions/${mentorshipDetail.id}`, {
+      const response = await fetch(`${API.SCHEDULING_SERVICE}/api/mentorship-sessions/${mentorshipDetail.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: "cancelada", cancelReason: rejectReason.trim(), platformLink: "" }),
@@ -155,7 +159,7 @@ export default function MentorSchedule() {
   const handleFinishSession = async () => {
     if (!mentorshipDetail) return;
     try {
-      const response = await fetch(`http://localhost:8083/api/mentorship-sessions/${mentorshipDetail.id}`, {
+      const response = await fetch(`${API.SCHEDULING_SERVICE}/api/mentorship-sessions/${mentorshipDetail.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: "esperando_confirmacion" }),
@@ -172,30 +176,53 @@ export default function MentorSchedule() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => navigate("/")}
-                className="text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <div>
-                <h1 className="text-xl font-semibold text-gray-900">
-                  Mi Calendario de Mentorías
-                </h1>
-                <p className="text-sm text-gray-600">
-                  Gestiona tus sesiones programadas
-                </p>
-              </div>
+      <header className="border-b sticky top-0 bg-white/80 backdrop-blur-sm z-30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
+            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+              <Award className="w-5 h-5 text-white" />
             </div>
+            <span className="text-xl font-semibold text-gray-900">CertiMentor</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {isLoggedIn && (
+              <>
+                <button
+                  onClick={() => navigate("/mentor-dashboard")}
+                  className="px-3 py-2 text-gray-700 hover:text-gray-900 transition-colors flex items-center gap-2 text-sm"
+                >
+                  <Users className="w-4 h-4" />
+                  Mi Dashboard
+                </button>
+
+                {/* Perfil */}
+                <div className="flex items-center gap-3 ml-4 pl-4 border-l border-gray-200">
+                  <button onClick={() => navigate("/perfil")} className="flex items-center gap-3 text-left hover:bg-gray-100 p-1 rounded-lg transition-colors">
+                    <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
+                      {user?.profileImage ? (
+                        <img src={user.profileImage} alt="Perfil" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-lg font-bold text-indigo-600">{user?.name?.charAt(0).toUpperCase() || "U"}</span>
+                      )}
+                    </div>
+                    <div className="hidden sm:block">
+                      <div className="text-sm font-medium text-gray-900">{user?.name}</div>
+                      <div className="text-xs text-gray-500 capitalize">{user?.role}</div>
+                    </div>
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Mi Calendario de Mentorías</h1>
+          <p className="text-gray-600">Gestiona tus sesiones programadas con estudiantes.</p>
+        </div>
         {/* Tabs */}
         <div className="flex gap-4 mb-8">
           <button
@@ -525,6 +552,7 @@ export default function MentorSchedule() {
             )}
           </div>
         )}
+
       </div>
 
       {/* Modal de Detalles */}
