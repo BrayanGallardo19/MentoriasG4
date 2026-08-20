@@ -1,4 +1,4 @@
-# CertiMentor
+# Certimentor
 
 Plataforma web de mentorías académicas y profesionales que conecta estudiantes con mentores certificados. Los estudiantes pueden buscar mentores, agendar sesiones y realizar pagos, mientras que los mentores gestionan sus ofertas, horarios y sesiones. La plataforma incluye notificaciones automáticas por correo y Telegram, un panel de administración y un sistema de reseñas.
 
@@ -7,7 +7,7 @@ Plataforma web de mentorías académicas y profesionales que conecta estudiantes
 El proyecto está construido con una arquitectura de **microservicios**, compuesta por un frontend en React y 6 microservicios independientes en Spring Boot, cada uno con su propia base de datos MySQL.
 
 ```
-CertiMentor/
+Certimentor/
 ├── MentoriasG4/            # Frontend (React + Vite + TypeScript)
 └── microservicios/
     ├── user-service/           # Autenticación, usuarios y solicitudes (Puerto 8081)
@@ -67,8 +67,8 @@ CertiMentor/
 ### 1. Clonar el repositorio
 
 ```bash
-git clone https://github.com/German-MoralesR/CertiMentor.git
-cd CertiMentor
+git clone https://github.com/BrayanGallardo19/Certimentor.git
+cd Certimentor
 ```
 
 ### 2. Configurar la base de datos
