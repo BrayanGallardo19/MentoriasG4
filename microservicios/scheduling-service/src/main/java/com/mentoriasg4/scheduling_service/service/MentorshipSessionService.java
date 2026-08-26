@@ -29,6 +29,9 @@ public class MentorshipSessionService {
     @Value("${notification.service.url:http://localhost:8085}")
     private String notificationServiceUrl;
 
+    @Value("${internal.service.token}")
+    private String internalServiceToken;
+
     // Método interno para notificar al user-service
     private void sendEmailNotification(String endpoint, MentorshipSession session, String reason) {
         CompletableFuture.runAsync(() -> {
@@ -41,7 +44,7 @@ public class MentorshipSessionService {
                 RestTemplate restTemplate = new RestTemplate();
                 HttpHeaders headers = new HttpHeaders();
                 headers.setContentType(MediaType.APPLICATION_JSON);
-                headers.set("X-Service-Token", "TokenSecretoInternoMentoriasG4"); // Usamos el token definido en config
+                headers.set("X-Service-Token", internalServiceToken);
 
                 Map<String, Object> body = new HashMap<>();
                 body.put("studentEmail", student.getEmail());

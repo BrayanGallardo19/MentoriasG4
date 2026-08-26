@@ -86,6 +86,15 @@ CREATE DATABASE db_payment_service;
 
 Los microservicios usan `root` sin contraseña por defecto. Si tu MySQL local usa otra configuración, edita el `application.properties` de cada microservicio.
 
+También puedes levantar MySQL y todos los servicios con Docker Compose:
+
+```bash
+cd microservicios
+docker compose up --build
+```
+
+El Compose crea automáticamente las seis bases de datos y configura la comunicación interna mediante los nombres de servicio Docker.
+
 ### 3. Configurar variables de entorno
 
 Crea un archivo `.env` en `MentoriasG4/` (la carpeta del frontend):
@@ -145,14 +154,22 @@ El proyecto está desplegado usando:
 
 ### Variables de entorno en Railway
 
-Cada microservicio necesita configurarse con:
+Agrega un servicio MySQL en el proyecto Railway. Para cada microservicio crea un servicio desde su propia carpeta (`microservicios/<servicio>`) y selecciona el `Dockerfile` incluido. Railway debe inyectar el puerto en `PORT`, por lo que no es necesario fijar el puerto públicamente.
+
+Cada microservicio necesita estas variables, conectadas al servicio MySQL:
 
 ```
-SPRING_DATASOURCE_URL=jdbc:mysql://mysql.railway.internal:3306/db_<nombre>
-SPRING_DATASOURCE_USERNAME=root
-SPRING_DATASOURCE_PASSWORD=<password_de_mysql>
+MYSQLHOST=${{MySQL.MYSQLHOST}}
+MYSQLPORT=${{MySQL.MYSQLPORT}}
+MYSQLUSER=${{MySQL.MYSQLUSER}}
+MYSQLPASSWORD=${{MySQL.MYSQLPASSWORD}}
+MYSQLDATABASE=db_<nombre_del_servicio>
 SPRING_JPA_HIBERNATE_DDL_AUTO=update
 ```
+
+Alternativamente puedes usar `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME` y `SPRING_DATASOURCE_PASSWORD` directamente. Crea las seis bases de datos en MySQL antes del primer despliegue si el usuario provisionado no tiene permisos para `CREATE DATABASE`.
+
+En todos los servicios configura el mismo `INTERNAL_SERVICE_TOKEN` y reemplaza los valores de ejemplo por secretos generados en Railway. En `user-service` agrega `JWT_SECRET` y `APP_FRONTEND_URL`.
 
 Y variables específicas según el microservicio:
 
@@ -161,6 +178,8 @@ Y variables específicas según el microservicio:
 - **feedback-service:** `USER_SERVICE_BASE_URL`
 - **notification-service:** `MAILJET_API_KEY`, `MAILJET_SECRET_KEY`, `TELEGRAM_BOT_TOKEN`
 - **payment-service:** `MERCADOPAGO_ACCESS_TOKEN`, `APP_FRONTEND_URL`
+
+Usa las URLs públicas de Railway para las variables entre servicios (`NOTIFICATION_SERVICE_URL`, `USER_SERVICE_BASE_URL`, etc.). No uses los dominios `*.railway.internal` desde el navegador: esos son solo para comunicación privada entre servicios.
 
 ### Variables de entorno en Vercel
 

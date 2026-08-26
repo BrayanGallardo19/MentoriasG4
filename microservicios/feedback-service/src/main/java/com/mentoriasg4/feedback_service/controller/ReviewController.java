@@ -27,7 +27,7 @@ public class ReviewController {
     @Value("${internal.service.token}")
     private String internalToken;
 
-    @Value("{$user.service.base-url:http://localhost:8081}")
+    @Value("${user.service.base-url:http://localhost:8081}")
     private String userServiceUrl;
 
     @GetMapping("/mentor/{mentorId}")

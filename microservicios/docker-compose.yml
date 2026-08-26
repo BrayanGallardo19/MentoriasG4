@@ -1,0 +1,114 @@
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-localroot}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./mysql/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-ulroot", "-plocalroot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  user-service:
+    build: ./user-service
+    environment:
+      MYSQLHOST: mysql
+      MYSQLPORT: 3306
+      MYSQLUSER: root
+      MYSQLPASSWORD: localroot
+      MYSQLDATABASE: db_user_service
+      JWT_SECRET: local-jwt-secret-change-me
+      INTERNAL_SERVICE_TOKEN: local-internal-token
+      NOTIFICATION_SERVICE_URL: http://notification-service:8085
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+
+  mentorship-service:
+    build: ./mentorship-service
+    environment:
+      MYSQLHOST: mysql
+      MYSQLPORT: 3306
+      MYSQLUSER: root
+      MYSQLPASSWORD: localroot
+      MYSQLDATABASE: db_mentorship_service
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8082:8082"
+
+  scheduling-service:
+    build: ./scheduling-service
+    environment:
+      MYSQLHOST: mysql
+      MYSQLPORT: 3306
+      MYSQLUSER: root
+      MYSQLPASSWORD: localroot
+      MYSQLDATABASE: db_scheduling_service
+      INTERNAL_SERVICE_TOKEN: local-internal-token
+      USER_SERVICE_BASE_URL: http://user-service:8081
+      NOTIFICATION_SERVICE_URL: http://notification-service:8085
+      NOTIFICATIONS_SERVICE_URL: http://notification-service:8085
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8083:8083"
+
+  feedback-service:
+    build: ./feedback-service
+    environment:
+      MYSQLHOST: mysql
+      MYSQLPORT: 3306
+      MYSQLUSER: root
+      MYSQLPASSWORD: localroot
+      MYSQLDATABASE: db_feedback_service
+      INTERNAL_SERVICE_TOKEN: local-internal-token
+      USER_SERVICE_BASE_URL: http://user-service:8081
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8084:8084"
+
+  notification-service:
+    build: ./notification-service
+    environment:
+      MYSQLHOST: mysql
+      MYSQLPORT: 3306
+      MYSQLUSER: root
+      MYSQLPASSWORD: localroot
+      MYSQLDATABASE: db_notification_service
+      INTERNAL_SERVICE_TOKEN: local-internal-token
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8085:8085"
+
+  payment-service:
+    build: ./payment-service
+    environment:
+      MYSQLHOST: mysql
+      MYSQLPORT: 3306
+      MYSQLUSER: root
+      MYSQLPASSWORD: localroot
+      MYSQLDATABASE: db_payment_service
+      MERCADOPAGO_ACCESS_TOKEN: ${MERCADOPAGO_ACCESS_TOKEN:-}
+      APP_FRONTEND_URL: http://localhost:5173
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8086:8086"
+
+volumes:
+  mysql-data:
